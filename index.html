@@ -1,0 +1,3114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAPS Internship: 16-Week Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181b24;
+    --surface-raised: #1f2330;
+    --border: #2a2e3a;
+    --text: #e8e6e1;
+    --text-muted: #8a8b8f;
+    --accent: #c9a55c;
+    --accent-dim: rgba(201,165,92,0.15);
+    --setup: #6a6e7a;
+    --discovery: #4a7c6f;
+    --testing: #5b7494;
+    --iteration: #8b6b4a;
+    --refinement: #7a5b8a;
+    --deployment: #4a6a5a;
+    --in-person: #c9a55c;
+    --virtual: #5a6a7a;
+    --half-day: #8a7a5a;
+    --hum-accent: #d4856a;
+    --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Grain overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards;
+  }
+
+  header .overline {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: clamp(32px, 5vw, 56px);
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  header .subtitle {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 28px;
+  }
+
+  /* Toggle */
+  .toggle-wrap {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.15s forwards;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 32px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(42,46,58,0.6);
+    border-radius: 8px;
+    transition: background 0.3s ease;
+  }
+
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: transform 0.3s ease, background 0.3s ease;
+  }
+
+  .toggle-switch input:checked + .toggle-slider {
+    background: rgba(212,133,106,0.25);
+  }
+
+  .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(16px);
+    background: var(--hum-accent);
+  }
+
+  /* Standard / Shrinked view toggle */
+  .view-toggle-wrap {
+    text-align: center;
+    margin-top: 18px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.2s forwards;
+  }
+  .view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .view-btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    padding: 8px 22px;
+    cursor: pointer;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+  .view-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .view-btn:not(.active):hover { color: var(--text); }
+
+  /* Main section tab nav (top-left) */
+  .main-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    gap: 4px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin: 0 0 32px;
+    padding-top: 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .main-nav-tab {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 18px;
+    margin-bottom: -1px;
+    cursor: pointer;
+    transition: color 0.25s ease, border-color 0.25s ease;
+  }
+  .main-nav-tab:hover { color: var(--text); }
+  .main-nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Week-by-week breakdown header that carries the view toggle */
+  .breakdown-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0 18px;
+  }
+  .breakdown-head .section-label { margin: 0; }
+
+  /* Shrinked mode: keep ALL the detail. Surface pressure-relief notes instead of removing content. */
+  .shrink-banner {
+    display: none;
+    margin: 0 0 26px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-muted);
+  }
+  .shrink-banner strong { color: var(--accent); }
+  .shrink-active .shrink-banner { display: block; }
+
+  .shrink-note { display: none; }
+  .shrink-active .shrink-note {
+    display: block;
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgba(201,165,92,0.10);
+    border-left: 2px solid var(--accent);
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+  .shrink-note b { color: var(--accent); font-weight: 600; }
+
+  /* Cadence section */
+  .cadence {
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.3s forwards;
+  }
+
+  .section-label {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  /* Weekly calendar grid */
+  .week-cal {
+    display: grid;
+    grid-template-columns: 58px repeat(7, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    font-size: 11px;
+  }
+
+  .week-cal-header {
+    background: var(--surface-raised);
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .week-cal-time {
+    background: var(--surface);
+    padding: 6px 8px;
+    text-align: right;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .week-cal-cell {
+    background: var(--surface);
+    padding: 6px 8px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cal-block {
+    width: 100%;
+    padding: 6px 6px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .cal-block small {
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.8;
+  }
+
+  .cal-standup { background: rgba(122,197,160,0.15); color: var(--hrs-standup); }
+  .cal-sync { background: rgba(91,155,213,0.15); color: var(--hrs-sync); }
+  .cal-deepwork { background: rgba(122,91,138,0.15); color: var(--hrs-deepwork); }
+  .cal-client { background: rgba(196,149,106,0.15); color: var(--hrs-client); }
+  .cal-checkin { background: rgba(138,122,106,0.15); color: var(--hrs-checkin); }
+  .cal-learning { background: rgba(74,124,111,0.15); color: var(--hrs-learning); }
+  .cal-docs { background: rgba(91,116,148,0.15); color: var(--hrs-docs); }
+  .cal-workshop { background: var(--accent-dim); color: var(--accent); }
+
+  .cal-split {
+    width: 100%;
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    min-height: 44px;
+    background: linear-gradient(to top right, rgba(122,197,160,0.15) 50%, var(--accent-dim) 50%);
+  }
+
+  .cal-split::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to top right, transparent calc(50% - 0.5px), var(--border) calc(50% - 0.5px), var(--border) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+    pointer-events: none;
+  }
+
+  .cal-split-label {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .cal-split-virtual {
+    bottom: 4px;
+    left: 5px;
+    color: var(--hrs-standup);
+  }
+
+  .cal-split-inperson {
+    top: 4px;
+    right: 5px;
+    color: var(--accent);
+  }
+
+  /* Target Hours bar */
+  .hours-breakdown {
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.35s forwards;
+  }
+
+  .target-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+  }
+
+  .target-bar-track {
+    display: flex;
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--border);
+    margin-bottom: 16px;
+  }
+
+  .target-bar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    justify-content: center;
+  }
+
+  .target-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .target-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .target-hrs {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+    margin-left: 2px;
+  }
+
+  .target-total {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .target-total strong {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--accent);
+    margin: 0 4px;
+  }
+
+  /* Escalation section */
+  .escalation {
+    margin-bottom: 48px;
+  }
+
+  .escalation-grid {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .escalation-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    flex: 1 1 0;
+    min-width: 200px;
+    max-width: 320px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .escalation-step:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+
+  .step-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .step-content h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .step-content .meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .escalation-arrow {
+    font-size: 24px;
+    color: var(--accent);
+    padding: 0 12px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .escalation-note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+  }
+
+  @media (max-width: 768px) {
+    .escalation-grid { flex-direction: column; align-items: stretch; }
+    .escalation-arrow { text-align: center; transform: rotate(90deg); padding: 8px 0; }
+    .escalation-step { max-width: none; }
+  }
+
+  /* Phase headers */
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 40px 0 16px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  .phase-header .phase-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .phase-header h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 24px;
+  }
+
+  .phase-header .phase-weeks {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .phase-header .epoch-badge {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-left: auto;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .hum-active .epoch-badge {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* Week cards */
+  .week-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .week-card:hover {
+    border-color: rgba(201,165,92,0.3);
+    background: var(--surface-raised);
+  }
+
+  .week-card.expanded {
+    border-color: rgba(201,165,92,0.4);
+  }
+
+  .week-main {
+    display: grid;
+    grid-template-columns: 60px 100px 1fr 140px 32px;
+    align-items: start;
+    padding: 16px 20px;
+    gap: 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  @media (max-width: 768px) {
+    .week-main {
+      grid-template-columns: 50px 80px 1fr 32px;
+      gap: 12px;
+    }
+    .week-main .deliverables { display: none; }
+  }
+
+  .week-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--text-muted);
+    line-height: 1;
+  }
+
+  .week-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+
+  .week-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .week-venue {
+    font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;
+  }
+  .week-date {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .format-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    width: fit-content;
+  }
+
+  .format-allday {
+    background: rgba(201,165,92,0.15);
+    color: var(--in-person);
+  }
+
+  .format-halfday {
+    background: rgba(138,122,90,0.2);
+    color: var(--half-day);
+  }
+
+  .format-new {
+    background: rgba(212,133,106,0.18);
+    color: var(--hum-accent);
+    border: 1px dashed var(--hum-accent);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .format-virtual {
+    background: rgba(90,106,122,0.2);
+    color: var(--virtual);
+  }
+
+  .week-content h5 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .week-content p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .week-content .guest-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .week-content .role-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    margin-right: 4px;
+  }
+
+  .role-tag.pm { color: #7ac5a0; background: rgba(122,197,160,0.15); }
+  .role-tag.designer { color: #c98ad4; background: rgba(201,138,212,0.15); }
+  .role-tag.builder { color: #5b9bd5; background: rgba(91,155,213,0.15); }
+  .role-tag.researcher { color: #d4a55c; background: rgba(212,165,92,0.15); }
+  .role-tag.all-roles { color: var(--text-muted); background: rgba(138,139,143,0.15); }
+
+  .deliverables {
+    font-size: 12px;
+    color: var(--text-muted);
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+    line-height: 1.6;
+  }
+
+  /* Chevron */
+  .expand-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    align-self: center;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .expand-chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .week-card.expanded .expand-chevron {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+
+  /* Schedule dropdown */
+  .schedule-dropdown {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+    opacity: 0;
+    border-top: 0px solid transparent;
+  }
+
+  .week-card.expanded .schedule-dropdown {
+    opacity: 1;
+    border-top: 1px solid var(--border);
+  }
+
+  .schedule-inner {
+    padding: 20px 24px 24px;
+  }
+
+  /* Timeline for in-person */
+  .timeline {
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 75px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .timeline::before { left: 65px; }
+  }
+
+  .time-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 8px 0;
+    position: relative;
+  }
+
+  .time-block .time-range {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    min-width: 68px;
+    text-align: right;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .time-block .time-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .time-block .time-dot.dot-break {
+    background: var(--border);
+  }
+
+  .time-block .time-dot.dot-hum {
+    background: var(--hum-accent);
+  }
+
+  .time-block .time-dot.dot-lunch {
+    background: var(--text-muted);
+  }
+
+  .time-block .time-desc {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .time-block .time-desc .block-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  .block-label.label-hum {
+    background: rgba(212,133,106,0.15);
+    color: var(--hum-accent);
+  }
+
+  .block-label.label-gaps {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .block-label.label-break {
+    background: rgba(138,139,143,0.1);
+    color: var(--text-muted);
+  }
+
+  /* Virtual week cadence table */
+  .virtual-cadence {
+    margin-bottom: 16px;
+  }
+
+  .virtual-cadence-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .virtual-cadence-table th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .virtual-cadence-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(42,46,58,0.5);
+    color: var(--text);
+  }
+
+  .virtual-cadence-table td:last-child {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .virtual-cadence-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Hours summary row in dropdown */
+  .hours-summary-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    background: rgba(201,165,92,0.06);
+    border: 1px solid rgba(201,165,92,0.12);
+    border-radius: 6px;
+    margin-top: 16px;
+    font-size: 13px;
+    align-items: center;
+  }
+
+  .hours-summary-row .hrs-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hours-summary-row .hrs-label {
+    color: var(--text-muted);
+  }
+
+  .hours-summary-row .hrs-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--accent);
+  }
+
+  .hours-summary-row .hrs-sep {
+    color: var(--border);
+    font-weight: 300;
+  }
+
+  .hours-summary-row .hrs-item.hrs-total .hrs-value {
+    color: var(--text);
+    font-size: 20px;
+  }
+
+  .schedule-source {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    opacity: 0.6;
+  }
+
+  .schedule-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-left: 2px solid var(--border);
+  }
+
+  .schedule-deliverables {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .schedule-deliverables strong {
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* HUM toggle: hide/show HUM content based on mode */
+  .hum-only { display: none; }
+  .hum-active .hum-only { display: inline; }
+  .hum-active .hum-only-block { display: block; }
+  .hum-active .hum-only-row { display: table-row; }
+  .hum-only-block { display: none; }
+  .hum-only-row { display: none; }
+  .standard-only { display: inline; }
+  .hum-active .standard-only { display: none; }
+  .standard-only-block { display: block; }
+  .hum-active .standard-only-block { display: none; }
+
+  /* HUM row - expands below schedule dropdown */
+  .hum-row {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1), padding 0.5s ease, opacity 0.4s ease;
+    opacity: 0;
+    padding: 0 20px;
+    border-top: 0px solid transparent;
+    background: rgba(212,133,106,0.04);
+  }
+
+  .hum-active .hum-row {
+    max-height: 200px;
+    opacity: 1;
+    padding: 12px 20px 16px;
+    border-top: 1px solid rgba(212,133,106,0.15);
+  }
+
+  .hum-row .hum-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--hum-accent);
+    margin-bottom: 4px;
+  }
+
+  .hum-row .hum-prompt {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .hum-row .hum-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Week detail sections (expandable rows below cadence table) */
+  .week-detail {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .detail-section {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    user-select: none;
+  }
+
+  .detail-header:hover {
+    background: var(--surface);
+  }
+
+  .detail-label {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+
+  .detail-chevron {
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+  }
+
+  .detail-section.expanded .detail-chevron {
+    transform: rotate(90deg);
+  }
+
+  .detail-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), padding 0.3s ease;
+    padding: 0 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .detail-section.expanded .detail-content {
+    max-height: 2000px;
+    padding: 0 14px 14px;
+  }
+
+  .detail-content p {
+    margin: 0 0 8px;
+  }
+
+  .detail-content ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+
+  .detail-content li {
+    margin-bottom: 4px;
+  }
+
+  /* Role blocks inside detail sections */
+  .role-block {
+    margin-bottom: 10px;
+    padding-left: 12px;
+    border-left: 2px solid var(--border);
+  }
+
+  .role-block:last-child {
+    margin-bottom: 0;
+  }
+
+  .role-tag {
+    display: inline-block;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+
+  .tag-builder { background: rgba(91,155,213,0.15); color: #5b9bd5; }
+  .tag-designer { background: rgba(212,133,106,0.15); color: #d4856a; }
+  .tag-researcher { background: rgba(74,124,111,0.15); color: #4a7c6f; }
+  .tag-pm { background: rgba(196,163,90,0.15); color: #c4a35a; }
+
+  .role-block ul {
+    margin: 2px 0 0;
+    padding-left: 16px;
+  }
+
+  .role-block li {
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  /* Horizontal hours bar */
+  .hours-bar {
+    margin-top: 16px;
+  }
+
+  .hours-bar-track {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--border);
+  }
+
+  .bar-segment {
+    height: 100%;
+    transition: width 0.4s ease;
+    position: relative;
+  }
+
+  .bar-segment:first-child {
+    border-radius: 5px 0 0 5px;
+  }
+
+  .bar-segment:last-child {
+    border-radius: 0 5px 5px 0;
+  }
+
+  .hours-bar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .bar-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+
+  .bar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .bar-hrs {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* Hours bar color vars */
+  :root {
+    --hrs-standup: #7ac5a0;
+    --hrs-sync: #5b9bd5;
+    --hrs-client: #c4956a;
+    --hrs-deepwork: #7a5b8a;
+    --hrs-learning: #4a7c6f;
+    --hrs-docs: #5b7494;
+    --hrs-checkin: #8a7a6a;
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    margin-top: 48px;
+    padding: 28px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.5s forwards;
+  }
+
+  .summary-bar .summary-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .summary-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .summary-bar .stat {
+    text-align: center;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .summary-bar .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 32px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .summary-bar .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .summary-bar .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .summary-stats { justify-content: center; }
+    .summary-bar .stat-divider { display: none; }
+    .summary-bar .stat { min-width: 80px; }
+  }
+
+  .summary-bar .stat.stat-highlight .stat-num {
+    color: var(--text);
+    font-size: 36px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.6s forwards;
+  }
+
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; color: #111; }
+    body::after { display: none; }
+    .week-card { border: 1px solid #ddd; background: #fafafa; break-inside: avoid; }
+    .toggle-wrap { display: none; }
+    .hum-row { max-height: none; opacity: 1; padding: 8px 20px; }
+    .schedule-dropdown { max-height: none !important; opacity: 1 !important; border-top: 1px solid #ddd !important; }
+    .expand-chevron { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="overline">CGCS + The Public Service Desk</div>
+    <h1>GAPS Internship</h1>
+    <div class="subtitle">Generative AI in Public Service: 16-Week Calendar, Fall 2026</div>
+    <div class="toggle-wrap">
+      <label class="toggle-switch">
+        <input type="checkbox" onchange="toggleHum(this)" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </header>
+
+  <nav class="main-nav">
+    <button class="main-nav-tab" data-tab="cadence" onclick="setTab('cadence', this)">Weekly Cadence</button>
+    <button class="main-nav-tab" data-tab="escalation" onclick="setTab('escalation', this)">Escalation Paths</button>
+    <button class="main-nav-tab active" data-tab="breakdown" onclick="setTab('breakdown', this)">Weekly Breakdown</button>
+  </nav>
+
+  <div class="tab-panel" id="panel-cadence">
+  <section class="cadence">
+    <div class="section-label">Weekly Cadence</div>
+    <div class="week-cal">
+      <div class="week-cal-header"></div>
+      <div class="week-cal-header">Mon</div>
+      <div class="week-cal-header">Tue</div>
+      <div class="week-cal-header">Wed</div>
+      <div class="week-cal-header">Thu</div>
+      <div class="week-cal-header">Fri</div>
+      <div class="week-cal-header">Sat</div>
+      <div class="week-cal-header">Sun</div>
+
+      <div class="week-cal-time">9:00</div>
+      <div class="week-cal-cell"><div class="cal-block cal-standup" style="opacity:0.6">Stand-up<br><small>15-20 min &middot; optional, team decides</small></div></div>
+      <div class="week-cal-cell"></div>
+      <div class="week-cal-cell"><div class="cal-block cal-standup" style="opacity:0.6">Stand-up<br><small>15-20 min &middot; optional, team decides</small></div></div>
+      <div class="week-cal-cell"></div>
+      <div class="week-cal-cell"><div class="cal-block cal-standup" style="opacity:0.6">Stand-up<br><small>15-20 min &middot; optional, team decides</small></div></div>
+      <div class="week-cal-cell" style="grid-row: span 2;"><div class="cal-block cal-workshop" style="height:100%;display:flex;flex-direction:column;justify-content:center;">Potential<br>Full Day / Half Day<br><small>In person at CGCS</small></div></div>
+      <div class="week-cal-cell"></div>
+
+      <div class="week-cal-time">Day</div>
+      <div class="week-cal-cell" style="grid-column: span 5;"><div class="cal-block cal-deepwork" style="text-align:left;padding:10px 12px;">Team decides<br><small>Deep work (solo or together, async) &middot; Client work by client availability &middot; 60-min Team Sync whenever the team sets it</small></div></div>
+      <div class="week-cal-cell"></div>
+
+      <div class="week-cal-time">By appt</div>
+      <div class="week-cal-cell" style="grid-column: span 5;"><div class="cal-block cal-learning" style="text-align:left;padding:10px 12px;">Office hours with Stefano or Willie &middot; 1 hr per day<br><small>Book through the calendar link we share. In person at the Center or virtual. <b>2 days notice for in person, 1 day notice for virtual.</b></small></div></div>
+      <div class="week-cal-cell"></div>
+      <div class="week-cal-cell"><div class="cal-block cal-docs">Weekly Activity<br>Report / Journal<br><small>due Sunday night</small></div></div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.6;">Monday to Friday is yours to organise: deep work solo or together, client work when the client is available, and a 60-minute Team Sync whenever the team decides. Stand-ups are 15 to 20 minutes and stay optional: Agility Austin trains the teams on stand-up practice and each group finds what works for them. Whenever a team does meet, Google Meet transcribes it automatically and the Project Manager forwards the transcript to supervisors. Saturday is the in-person day at CGCS, where every full-day and half-day gathering happens with supervisors on-site. Office hours with Stefano or Willie run one hour a day, booked through the calendar link we share: two days notice to meet in person at the Center, one day notice to meet virtually. The weekly activity report is due Sunday night.<br>During the week, use the escalation process if urgent.</div>
+  </section>
+
+  <section class="hours-breakdown">
+    <div class="section-label">Target Hours (per week, ~20 total)</div>
+    <div class="target-bar-wrap">
+      <div class="target-bar-track">
+        <div style="width:3.75%;background:var(--hrs-standup)"></div>
+        <div style="width:5%;background:var(--hrs-sync)"></div>
+        <div style="width:10%;background:var(--hrs-client)"></div>
+        <div style="width:52.5%;background:var(--hrs-deepwork)"></div><div style="width:3.75%;background:var(--hrs-checkin)"></div>
+        <div style="width:10%;background:var(--hrs-learning)"></div>
+        <div style="width:15%;background:var(--hrs-docs)"></div>
+      </div>
+      <div class="target-bar-legend">
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="target-hrs">0.75</span></span>
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="target-hrs">1</span></span>
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-client)"></span>Client / Field Work <span class="target-hrs">2</span></span>
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="target-hrs">10.5</span></span>
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="target-hrs">0.75</span></span>
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="target-hrs">2</span></span>
+        <span class="target-label"><span class="target-dot" style="background:var(--hrs-docs)"></span>Weekly Activity Report <span class="target-hrs">3</span></span>
+      </div>
+      <div class="target-total">Weekly Total: <strong>~20</strong> hours</div>
+    </div>
+  </section>
+  </div>
+
+  <div class="tab-panel" id="panel-escalation">
+  <section class="escalation" style="opacity:0;animation:fadeUp 0.8s ease 0.45s forwards;">
+    <div class="section-label">Escalation Process + Chain of Command</div>
+    <div class="escalation-grid">
+      <div class="escalation-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Check Your Shared Brain</h4>
+          <div class="meta">Search your Team Brain with an LLM. Weeks 1-7 that's your shared Google Docs through NotebookLM; from Week 8 it's your local Markdown through Antigravity CLI. It has the answer to most questions, if you've been feeding it.</div>
+        </div>
+      </div>
+      <div class="escalation-arrow">&#8594;</div>
+      <div class="escalation-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Ask the GAPS Knowledge Base</h4>
+          <div class="meta">Use the chat interface your GAPS supervisors have shared with you: a Vertex AI agent indexed over the program's shared Google Drive. Ask it anything about GAPS and get cited answers with links back to the source documents.</div>
+        </div>
+      </div>
+      <div class="escalation-arrow">&#8594;</div>
+      <div class="escalation-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Brainstorm with Your Team</h4>
+          <div class="meta">Brainstorm with your team or a teammate, with an AI as the facilitator. Even better if it's your shared brain facilitating.</div>
+        </div>
+      </div>
+      <div class="escalation-arrow">&#8594;</div>
+      <div class="escalation-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Escalate to Supervisors</h4>
+          <div class="meta">The project manager escalates the question via email to the supervisors. Include the question, what was tried, and what the knowledge base and teammates said.</div>
+        </div>
+      </div>
+    </div>
+    <div class="escalation-note">Interns do not contact supervisors directly. The PM is the single point of contact per team. This mirrors real-world chain of command.</div>
+  </section>
+  </div>
+
+  <div class="tab-panel active" id="panel-breakdown">
+  <div class="breakdown-head">
+    <div class="section-label">Week-by-Week Breakdown</div>
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="standard" onclick="setView('standard', this)">Standard</button>
+      <button class="view-btn" data-view="shrink" onclick="setView('shrink', this)">Shrinked</button>
+    </div>
+  </div>
+
+  <div id="calendar" class="hum-active">
+
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Setup (Pre-Internship) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-header" style="animation-delay:0.4s">
+      <span class="phase-dot" style="background:var(--setup)"></span>
+      <h3>Setup</h3>
+      <span class="phase-weeks">Week 0</span>
+      <span class="epoch-badge" style="background:rgba(106,110,122,0.2);color:var(--setup)">Pre-Internship</span>
+    </div>
+
+    <!-- WEEK 0: SETUP -->
+    <div class="week-card" style="animation-delay:0.42s" data-week="0">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">00</div>
+        <div class="week-meta">
+          <div class="format-badge format-allday">Setup Week &middot; Self-paced, up to 2 wks before Aug 22</div>
+        </div>
+        <div class="week-content">
+          <h5>Laptop Setup + Software Installation</h5>
+          <p>Interns receive laptops and complete all software installation so they arrive to the Kickoff ready to work.</p>
+          <div class="shrink-note"><b>Lightened:</b> Self-paced over up to two weeks. No deadline pressure. Supervisors help if you get stuck. You just need to arrive ready.</div>
+        </div>
+        <div class="deliverables">Laptops configured. All software installed and verified.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="timeline">
+            <div class="time-block">
+              <div class="time-range">By appointment</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Laptop Distribution</span> Interns pick up their assigned laptop at CGCS. Brief orientation on care and return policy.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">Self-paced</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Software Installation</span> Install the full toolchain in one go, "install, don't teach": Google Chrome, Google Workspace apps, Node.js/npm, Git, GitHub account, VS Code or preferred editor, <strong>Antigravity CLI + Antigravity IDE</strong>, <strong>OpenCode CLI + OpenCode desktop</strong>, and <strong>Jira + Confluence</strong> accounts. Follow the setup checklist provided by supervisors. <strong>The terminal tools stay dormant until Week 8</strong>: you install them now while support is in the room, you do not need to understand them yet.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">Self-paced</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Account Setup</span> Activate PSD Google Workspace account. Verify Gemini Enterprise access. Join shared Drive folders. Set up Google Meet. Activate <strong>Jira and Confluence</strong>, the team project-management stack alongside Google Workspace.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">By Fri Aug 21</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Verification</span> Confirm all software works. Run a test prompt in Google AI Studio. Report any issues to supervisors before the Kickoff.</div>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Laptop configured with the full toolchain, terminal tools installed but dormant. PSD Workspace, Jira and Confluence accounts active. Ready for Day 1 Kickoff.</div>
+          <div class="schedule-source">Source: Pre-Kickoff logistics</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Phase 1: Discovery -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-header" style="animation-delay:0.45s">
+      <span class="phase-dot" style="background:var(--discovery)"></span>
+      <h3>Discovery</h3>
+      <span class="phase-weeks">Weeks 1-4</span>
+      <span class="epoch-badge" style="background:rgba(74,124,111,0.2);color:var(--discovery)">Empathy</span>
+    </div>
+
+    <!-- WEEK 1 -->
+    <div class="week-card" style="animation-delay:0.45s" data-week="1">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">01</div>
+        <div class="week-meta">
+          <div class="format-badge format-allday">Sat Aug 22 &middot; Full Day Kickoff, 9am-5pm</div>
+          <div class="week-venue">CGCS at ACC Rio Grande, 1218 West Ave, Austin, TX 78701. All in-person Saturdays are held here.</div>
+        </div>
+        <div class="week-content">
+          <h5>GAPS Kickoff</h5>
+          <p><span class="hum-only">Full-day HUM immersion (~5 hrs): "Why Public Service?", EPOCH Empathy, team forming, closing reflections. Light GAPS frame; technical onboarding (Team Brain, AI Studio) moves to async this week.</span><span class="standard-only">Full day: GAPS technical overview, PM training, Google AI Studio intro, Reconnect + NotebookLM quiz.</span></p>
+          <div class="shrink-note"><b>Lightened:</b> Today is exposure, not mastery. Only Project Managers learn the kanban; everyone else just plays with Gemini. You get feedback, not grades: this is an internship.</div>
+        </div>
+        <div class="deliverables">NotebookLM quiz (syllabus, planning, schedule, knowledge). First stand-up by Wk 3. Double Diamond pre-reading + video.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="timeline">
+            <!-- Shared opening -->
+            <div class="time-block">
+              <div class="time-range">9:00-9:30</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Welcome</span> Coffee + donuts. Casual meet and greet. Settle in.</div>
+            </div>
+
+            <!-- ===== STANDARD MODE: technical kickoff (HUM off) ===== -->
+            <div class="time-block standard-only-block">
+              <div class="time-range">9:30-10:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">GAPS Overview</span> Syllabus walkthrough, internship structure, expectations, team roles explained, 70/30 Rule intro (Copperfield Technologies).</div>
+            </div>
+            <div class="time-block standard-only-block">
+              <div class="time-range">10:30-10:45</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block standard-only-block">
+              <div class="time-range">10:45-12:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Google AI Studio Intro</span> First hands-on with Gemini. Explore, experiment, play. Self-paced discovery with supervisor support.</div>
+            </div>
+            <div class="time-block standard-only-block">
+              <div class="time-range">12:00-1:00</div>
+              <div class="time-dot dot-lunch"></div>
+              <div class="time-desc"><span class="block-label label-break">Lunch</span> Pizza</div>
+            </div>
+            <div class="time-block standard-only-block" style="border-left:2px solid var(--accent);margin-left:4px;padding-left:12px;">
+              <div class="time-range">1:00-2:45</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps" style="background:rgba(122,197,160,0.15);color:#7ac5a0;">Project Managers</span> PM intro: roles, expectations. Set up the Team Brain (shared Google Drive + NotebookLM) for their team, plus the Project-Manager-only Jira board (Jira training). Agility Austin virtual scrum training scheduled between Wk 1-2. Stand-ups begin Week 3.</div>
+            </div>
+            <div class="time-block standard-only-block" style="border-left:2px solid var(--testing);margin-left:4px;padding-left:12px;">
+              <div class="time-range">1:00-2:45</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps" style="background:rgba(91,155,213,0.15);color:#5b9bd5;">Other Interns</span> More AI Studio exploration + Reconnect prep.</div>
+            </div>
+            <div class="time-block standard-only-block">
+              <div class="time-range">2:45-3:00</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block standard-only-block">
+              <div class="time-range">3:00-4:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Reconnect</span> The interns teach the Project Managers what they learned in AI Studio. First team activity. Learning by teaching.</div>
+            </div>
+            <div class="time-block standard-only-block">
+              <div class="time-range">4:00-5:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">NotebookLM Quiz + Wrap</span> NotebookLM quiz covering the syllabus, the planning, the schedule and the knowledge. Logistics. Community of practice assignment: "Why Public Service?" reflection due end of week.</div>
+            </div>
+
+            <!-- ===== HUM MODE: full-day HUM immersion (~5 hrs HUM) ===== -->
+            <div class="time-block hum-only-block">
+              <div class="time-range">9:30-10:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">GAPS Orientation</span> Brief frame for the day: the mission, "Humanity in the loop," and why we open the internship with HUM before any technical work.</div>
+            </div>
+            <div class="time-block hum-only-block">
+              <div class="time-range">10:00-12:15</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM 1: "Why Public Service?"</span> Personal stories, guided dialogue, EPOCH Empathy deep dive. Heartkeeper, Understander, Motivator roles introduced. Team-facilitated by Jayme. (~2.25 hrs)</div>
+            </div>
+            <div class="time-block hum-only-block">
+              <div class="time-range">12:15-1:00</div>
+              <div class="time-dot dot-lunch"></div>
+              <div class="time-desc"><span class="block-label label-break">Lunch</span> Pizza</div>
+            </div>
+            <div class="time-block hum-only-block">
+              <div class="time-range">1:00-3:00</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM 2: Team Forming (HUM + CGCS)</span> CGCS names that preliminary teams exist but nothing is final today (no assigned seating). HUM facilitates a bonding + role-expression activity: interns surface their strengths and lean into a hat (PM / Designer / Developer / Researcher). Based on what emerges, HUM may swap members between preliminary teams for chemistry; CGCS holds the constraint that every final team keeps one of each hat + campus fit. (~2 hrs)</div>
+            </div>
+            <div class="time-block hum-only-block">
+              <div class="time-range">3:00-3:15</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block hum-only-block">
+              <div class="time-range">3:15-4:00</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM Closing + Team Confirmation</span> Closing circle. CGCS confirms the final teams and hats for the day. Interns complete a private reflection assignment in Google Classroom (each submits their own Google Doc, seen only by CGCS): how they feel about their team, how motivated they are, anything they want to add. (~0.75 hr)</div>
+            </div>
+            <div class="time-block hum-only-block">
+              <div class="time-range">4:00-5:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">GAPS Essentials + Wrap</span> Syllabus highlights, NotebookLM quiz (syllabus, planning, schedule, knowledge), logistics, what to install/prep. Team Brain setup and AI Studio first-touch move to async this week with supervisor support.</div>
+            </div>
+          </div>
+          <div class="hours-summary-row hum-only-block">
+            <div class="hrs-item"><span class="hrs-label">HUM:</span> <span class="hrs-value">~5</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">GAPS:</span> <span class="hrs-value">~1.5</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">Breaks/Lunch:</span> <span class="hrs-value">~1.5</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item hrs-total"><span class="hrs-label">Total:</span> <span class="hrs-value">8</span> <span class="hrs-label">hrs</span></div>
+          </div>
+          <div class="hours-summary-row standard-only-block">
+            <div class="hrs-item"><span class="hrs-label">Structured:</span> <span class="hrs-value">~5</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">Breaks/Lunch:</span> <span class="hrs-value">~1.5</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item hrs-total"><span class="hrs-label">Total:</span> <span class="hrs-value">8</span> <span class="hrs-label">hrs</span></div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> NotebookLM quiz (syllabus, planning, schedule, knowledge). First stand-up by Week 3.<span class="hum-only"> Day-1 team reflection (private Google Doc in Classroom). "Why Public Service?" reflection post by end of week.</span></div>
+          <div class="schedule-deliverables"><strong>Async assignments this week (Week 1 is intentionally light):</strong> Watch the <a href="https://www.youtube.com/watch?v=hIqqLppXJPs" target="_blank" rel="noopener" style="color:var(--accent);">Double Diamond framework video</a> Read <a href="https://www.linkedin.com/posts/pierre-alexandre-schaupp-24629620_the-double-diamond-isnt-dead-its-morphing-share-7472554242134790144-RHj-/" target="_blank" rel="noopener" style="color:var(--accent);">"The Double Diamond Isn't Dead, It's Morphing"</a> (Pierre-Alexandre Schaupp): the diamonds have shrunk and build time is now so minimal that we mold our process to it. Explore <a href="https://www.nngroup.com/" target="_blank" rel="noopener" style="color:var(--accent);">nngroup.com</a> (Nielsen Norman Group) as your standing UX reference.</div>
+          <div class="schedule-source">Source: 03_output/2026-05-29-24-gaps-16-week-calendar-with-hum.md, updated per Jun 4 brainstorm</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">HUM Immersion Day (~5 hrs)</div>
+        <div class="hum-prompt">"Why did you choose to serve?"</div>
+        <div class="hum-detail">Full-day, Jayme-facilitated: "Why Public Service?", EPOCH Empathy, team forming (co-run with CGCS, who finalizes teams + hats), closing reflections. Heartkeeper, Understander, Motivator roles introduced. First reflection assigned as a private Google Doc in Classroom. Technical onboarding (Team Brain, AI Studio) moves to async this week.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 2 -->
+    <div class="week-card" style="animation-delay:0.5s" data-week="2">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">02</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Aug 24-28 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-allday">+ Full Day: Sat Aug 29</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Client Immersion: Diamond 1 (Problem Finding)</h5>
+          <p>Full day: a "Project Management in the AI Age" master class (Agility Austin), a 30-minute in-person lab tour led by Nancy, "A Week in the Life of Nancy" (LEGO Serious Play + live journey map), the "I Believe That..." hypothesis debunk, then the Design Jam. This day finds the problem, it does not solve it. 9 AM - 4 PM.</p>
+          <p class="week-venue"><strong>Venue: ACC Highland Campus, Building 2000, 2nd floor, rooms 2221 and 2222</strong> (opposite the Computer Science / IT Department office). <strong>Note this is Highland, not Rio Grande</strong>, for this date only. Four round tables, food provided, facilitated by Stefano.</p>
+        </div>
+        <div class="deliverables">Workshop findings documented.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="timeline">
+            <div class="time-block hum-only-block">
+              <div class="time-range">9:00-9:30</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM Opener (PM-led)</span> "Empathy or efficiency: when do they conflict?" HUM Quick Conversation Prompt card 15, PM-facilitated. Sets up the day: we are here to understand Nancy, not optimise her. Jayme is not on-site for half-days (HUM lists live sessions only at Weeks 1, 4, 8, 16). ~30 min, connects to meeting the client.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range"><span class="hum-only">9:30</span><span class="standard-only">9:00</span>-10:15</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Project Management in the AI Age</span> Guest master class with a certified project manager from Agility Austin (Max): how to use AI for productivity and discipline in teams. Why PM discipline still matters in a "vibe-code and ship" world. (Possible follow-up sessions with the team Project Managers later.)</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">10:15-10:30</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">10:30-11:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Arrival + Context</span> Welcome and overview of the day. Nancy Lyon introduces the Incubator: who they are, what they do, and the founders they serve.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">11:00-11:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Lab Tour with Nancy (in person)</span> Nancy walks the cohort through the Incubator lab herself, <strong>30 minutes</strong>. <strong>Changed Aug 13:</strong> this was a 15-minute pre-recorded video when the day was at Rio Grande. Now that GAPS Saturdays are at Highland, the Incubator is on the same campus, so the cohort walks over and sees it live. <strong>This also resolves the separate lab-visit date that was previously to be agreed with Nancy: it is this block.</strong> Check the walking time between the session room and the Incubator (Building 4000) and pad the block if the rooms are far apart.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">11:30-12:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">"A Week in the Life of Nancy" (LEGO Serious Play + live journey map)</span> On printed floor plans of the Incubator, Nancy role-plays <strong>a week</strong>, or one recurring project mapped by milestones, using LEGO minifigures (Stefano's) plus four bags of bricks from Houli. <strong>The models are built with Nancy in advance</strong>, which is what makes a full week workable: the hour on the day goes to her narrating and the team mapping, not to construction. Houli originally scoped this to a single day because a week is too much to absorb live, and pre-building is the answer to that. Build in plot twists, the funding falls through, the funding doubles. <strong>Live journey map:</strong> butcher paper on the wall, <strong>Stefano scribes</strong> while everyone else takes notes. Neutral line down the middle, post-its above it for her high-momentum moments and below it for her hardest. Post-its, not marker, so they move. <strong>Member-check at the end:</strong> "Nancy, did I get this right?" She moves what is wrong, in front of the interns. <strong>Photograph the map.</strong> The LEGO movement is ephemeral; the map is the artifact teams return to all semester. <strong>The dips below the line become one problem per team.</strong></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">12:30-1:15</div>
+              <div class="time-dot dot-lunch"></div>
+              <div class="time-desc"><span class="block-label label-break">Lunch</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">1:15-2:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">"I Believe That..." (50 Hypotheses)</span> A Capital Factory founder strategy: Nancy verbalizes her assumptions as "I believe that..." statements (e.g., "I believe that an agent that drafts grants will boost the facility"), then the group pressure-tests and debunks them. The point: a founder's real problem is often not what they think it is. <strong>Nancy writes her first ~25 in advance</strong> and lets them sit, so this block works the harder second half. The first 25 come easily; the real ones need digging. <strong>Ladder the why on each one:</strong> more grants out quickly, why does that matter, better odds, and then what, double the funding contributes twice as much to society through biotechnology. Keep coming back to why. <strong>Tell the newsletter story:</strong> a team was asked to build an alumni newsletter, stopped to name the assumption that people wanted to stay in touch, called six alumni and found they did want contact but not a newsletter. Naming the assumption is how you avoid building something nobody uses.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:00-2:15</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:15-3:15</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Design Jam (find the problem, not the solution)</span> Teams synthesize the tour, the LEGO "week in the life," and the debunked hypotheses into clear problem statements. Cluster on sticky notes (physical or Miro) and affinity map. <strong>Expect clusters around funding, other resources, and recruiting experts or faculty.</strong> <strong>Name each cluster, then write one statement per cluster</strong> that captures it, e.g. "reaching more constituents would generate valuable medical research." Ground every statement in two things: what Nancy said was hard, and the assumptions she holds. No solutioning yet: this is Diamond 1, problem-finding only.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">3:15-3:50</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Share-out + Nancy Reacts</span> Each team shares its top problem statements. Nancy and supervisors react and validate which problems matter most. Synthesize themes.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">3:50-4:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Wrap</span> Name what the team walks out with: the named themes and critical areas, and <strong>explicitly the areas we are NOT working on</strong>. Example: do not help Nancy bond with her staff, the staff meeting is the happiest part of her week, that is working and we do not touch it. Assignment: Researchers compile Diamond 1 findings into a formal team document by next week.</div>
+            </div>
+          </div>
+          <div class="hours-summary-row">
+            <div class="hrs-item"><span class="hrs-label">In-person:</span> <span class="hrs-value">~6</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">Self-directed (rest of week):</span> <span class="hrs-value">~14</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item hrs-total"><span class="hrs-label">Week Total:</span> <span class="hrs-value">~20</span> <span class="hrs-label">hrs</span></div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Photographed journey map. Named problem per team, plus the areas explicitly not being worked on. Researchers compile Diamond 1 findings into a formal team document. <strong>Async (Mon-Fri):</strong> each intern builds a UX reference NotebookLM, fed with the Double Diamond sources, selected NN/g tools, and IKIGAI. Test it with two prompts: "What do you think the world needs?" and "Plan me a double diamond plan for my idea." Export the chat to PDF so the output is portable.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">30 min opener (PM-led)</div>
+        <div class="hum-prompt">"Empathy or efficiency: when do they conflict?"</div>
+        <div class="hum-detail">PM-led opener using HUM Quick Conversation Prompt card 15. Jayme not on-site. Connects to meeting the client. <em style="color:#c9a55c">Provisional: HUM present their proposed prompt set on Aug 7, chosen to run consistently with the Week 1 "Why Public Service?" activity.</em></div>
+      </div>
+    </div>
+
+    <!-- WEEK 3 -->
+    <div class="week-card" style="animation-delay:0.55s" data-week="3">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">03</div>
+        <div class="week-meta">
+                    <div class="format-badge format-virtual">Aug 31 - Sep 4 (Mon-Fri) &middot; Async + Virtual</div>
+        </div>
+        <div class="week-content">
+          <h5>Ideation (+ Research) + MVP Definition</h5>
+          <p>Validate Client Immersion findings. Features become User Stories, which become the MVP requirements. 2x2 Matrix (Impact vs. Effort). Tech stack decision with LLM analysis. Fieldwork with client.</p>
+        </div>
+        <div class="deliverables">3 usability sessions. Features to User Stories to MVP requirements. Tech stack.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Team Sync Focus</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Review Client Immersion outputs from Week 2. What resonated with the client? What assumptions need testing? Plan usability testing: who tests, which users, what tasks, what metrics.</p>
+                <p><strong>Agenda:</strong> (1) Client Immersion debrief, (2) assign usability testing pairs (Designer + Researcher per session), (3) define 3 core tasks to test, (4) schedule 3 sessions this week.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Client / Field Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Conduct 3 usability testing sessions with end users (seniors from ACC community). Designers and Researchers lead; Developers and Project Managers observe at least one session each.</p>
+                <p>Use guerrilla testing format: informal, task-based, 20-30 min per user. Record observations (not video). Focus on: Can they complete the task? Where do they hesitate? What language do they use?</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Role-Specific Deep Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <div class="role-block">
+                  <div class="role-tag tag-builder">Developers</div>
+                  <ul>
+                    <li>Document technical constraints from the Client Immersion problem statements</li>
+                    <li>Evaluate tech stack options using LLM-assisted analysis (Google vs. open-source tradeoffs)</li>
+                    <li>Write technical feasibility notes for MVP requirements</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-designer">Designers</div>
+                  <ul>
+                    <li>Prepare low-fi prototypes for usability testing sessions</li>
+                    <li>Design test scenarios: 3 core tasks users must complete</li>
+                    <li>Begin 2x2 Matrix (Impact for User vs. Time/Effort)</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-researcher">Researchers</div>
+                  <ul>
+                    <li>Compile Diamond 1 findings from Week 2 into formal report</li>
+                    <li>Create usability testing observation templates</li>
+                    <li>Document pain points, quotes, and behavioral patterns from sessions</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-pm">Project Managers</div>
+                  <ul>
+                    <li>Run first MWF stand-ups (Week 3 = first stand-up week, post Agility Austin training)</li>
+                    <li>Track usability testing schedule and results in kanban</li>
+                    <li>Begin compiling MVP requirements document from team inputs</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)" title="Stand-up: 0.75 hrs"></div>
+              <div class="bar-segment" style="width:5%;background:var(--hrs-sync)" title="Team Sync: 1.5 hrs"></div>
+              <div class="bar-segment" style="width:10%;background:var(--hrs-client)" title="Client/Field: 2 hrs"></div>
+              <div class="bar-segment" style="width:52.5%;background:var(--hrs-deepwork)" title="Deep Work: 10 hrs"></div>
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)" title="Check-in: 0.75 hrs"></div>
+              <div class="bar-segment" style="width:10%;background:var(--hrs-learning)" title="Learning: 2 hrs"></div>
+              <div class="bar-segment" style="width:15%;background:var(--hrs-docs)" title="Docs: 3 hrs"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Stand-up <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Sync <span class="bar-hrs">1</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Client <span class="bar-hrs">2</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Deep Work <span class="bar-hrs">10.5</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Check-in <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Learning <span class="bar-hrs">2</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Docs <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Diamond 1 report compiled by Researchers. 3 usability sessions. MVP requirements. Tech stack decision.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What conversation must stay human-to-human?"</div>
+        <div class="hum-detail">HUM Quick Conversation Prompt card 12. Headspace dialogue. Usability testing mindset: you are about to watch real people struggle. <em style="color:#c9a55c">Provisional pending HUM's Aug 7 prompt set.</em></div>
+      </div>
+    </div>
+
+    <!-- WEEK 4 -->
+    <div class="week-card" style="animation-delay:0.6s" data-week="4">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">04</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Sep 7-11 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-allday">+ Full Day: Sat Sep 12</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Design-a-thon: Xtreme Makeover: AI</h5>
+          <p>Co-design + rapid prototyping. Google AI Studio training. <strong>Every team member builds a prototype in Google AI Studio or Stitch, then the team picks the one that works best to demo.</strong> <strong>Async pre-read:</strong> the Brick Society cardboard-prototyping video (~1 min), a veterinary waiting room redesigned entirely in cardboard and tested with real animals: <a href="https://www.linkedin.com/posts/brick-society_figma-is-great-but-have-you-ever-built-your-activity-7487514664944173056-Wjk-" target="_blank" rel="noopener">watch</a>.<span class="hum-only"> First hour: HUM check-in on team development since Week 1.</span></p>
+          <div class="shrink-note"><b>Lightened:</b> Low-fidelity is the goal. Rough and ugly wins. You are not expected to ship anything polished today.</div>
+        </div>
+        <div class="deliverables">Low-fi solution per team. One prototype per member, one picked to demo.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="timeline">
+            <div class="time-block hum-only-block">
+              <div class="time-range">9:00-10:00</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM Check-in</span> "What would you build if failure wasn't possible?" Handspace dialogue. Team development reflection since Week 1.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range"><span class="hum-only">10:00</span><span class="standard-only">9:00</span>-10:15</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Design-a-thon Kickoff</span> Rules of engagement. <strong>Say it out loud: the solution does not have to be digital.</strong> A spatial or physical problem can be answered in cardboard, clay or LEGO, and AI can still help build it. Teams review Diamond 1 findings. Each team selects their top pain point to solve today.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">10:15-11:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Sprint 1: Ideation</span> Participatory brainstorming with expert faculty advisors. Crazy 8s sketching. Teams converge on one solution concept. Developers outline tech feasibility, Designers sketch user flow, Researchers validate against client data, Project Managers track scope.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">11:30-12:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Mid-morning Check</span> 2-min pitch per team. Cross-pollination: teams give feedback to each other.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">12:00-1:00</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Lunch</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">1:00-1:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Paper Prototyping (analog first)</span> No tooling and no training. Build it on paper: cut a hole in a sheet as the screen frame and pull the paper through to simulate scrolling. Houli's sequence is ideation, then paper, then computer. If the problem is spatial rather than digital, build it in clay or LEGO instead. <strong>The solution does not have to be an app.</strong></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">1:30-2:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Google AI Studio Training</span> Hands-on: build a first prototype prompt chain in AI Studio. Self-paced with supervisor support. Connect AI capability to the pain point selected.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:00-3:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Sprint 2: Rapid Prototype</span> Build the low-fi solution. Developers: wire up AI Studio output. Designers: paper/Figma prototype. Researchers: name what questions remain and what still needs clarity. Project Managers: <strong>write the usability test script, not a demo script.</strong></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">3:30-3:45</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">3:45-4:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Live Usability Test</span> No demo, no scoring. Each team hands its prototype to a supervisor playing a user, reads the script the Project Manager wrote, then <strong>says nothing else</strong>: "This is the task we want you to accomplish. You are a person who needs to X. How might you do that?" Watch whether they get through unaided. That tells you how intuitive the design is, and where it fails.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">4:30-5:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Synthesis + Next Iteration</span> Two halves, not one: where the hiccups and weak spots are, <strong>and</strong> what testers loved that you can lean into. Output is the next round of iterations. The point of today is <strong>two rounds of iterating, not one polished build</strong>: build your first thing, let it suck, then change it. Assignment: refine over the weekend.</div>
+            </div>
+          </div>
+          <div class="hours-summary-row">
+            <div class="hrs-item"><span class="hrs-label">In-person:</span> <span class="hrs-value">8</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">Self-directed (rest of week):</span> <span class="hrs-value">~12</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item hrs-total"><span class="hrs-label">Week Total:</span> <span class="hrs-value">~20</span> <span class="hrs-label">hrs</span></div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> One low-fi solution per team, tested against a real user and already iterated once. Usability findings and the next round of changes named. Google AI Studio first prompt chain.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">1 hr check-in</div>
+        <div class="hum-prompt">"What would you build if failure wasn't possible?"</div>
+        <div class="hum-detail">Handspace dialogue. Design-a-thon energy. Team development reflection.</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Phase 2: Testing + Building -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-header" style="animation-delay:0.65s">
+      <span class="phase-dot" style="background:var(--testing)"></span>
+      <h3>Testing + Building</h3>
+      <span class="phase-weeks">Weeks 5-7</span>
+      <span class="epoch-badge" style="background:rgba(91,116,148,0.2);color:var(--testing)">Presence</span>
+    </div>
+
+    <!-- WEEK 5 -->
+    <div class="week-card" style="animation-delay:0.7s" data-week="5">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">05</div>
+        <div class="week-meta">
+                    <div class="format-badge format-virtual">Sep 14-18 (Mon-Fri) &middot; Async + Virtual</div>
+        </div>
+        <div class="week-content">
+          <h5>MVP v2.0 + GitHub + IA v1</h5>
+          <p>Branching, commits, PRs. Information Architecture v1.</p>
+          <div class="shrink-note"><b>Lightened:</b> GitHub at first-touch level. You will not be fluent this week, and that is fine. Developers lead; everyone else just learns the basics.</div>
+          <span class="guest-tag">Guest: Alan (CTO, Copperfield Technologies)</span>
+          <br><span class="role-tag designer">Designers: 1:1 IA training</span>
+        </div>
+        <div class="deliverables">Repo initialized. IA v1 finalized.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Team Sync Focus</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Debrief usability testing results from Week 3. Review MVP requirements. Discuss Alan's architecture talk: how to plan before building, what "production-ready" means vs. a prototype.</p>
+                <p><strong>Agenda:</strong> (1) MVP requirements review, (2) GitHub workflow walkthrough (branching, PRs, GAPS Workflow), (3) assign sprint tasks for MVP v2.0 build, (4) IA v1 status check with Designers.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Client / Field Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Follow-up with users from Week 3 testing if clarification is needed. No new testing sessions this week. Focus is on building based on validated requirements.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Role-Specific Deep Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <div class="role-block">
+                  <div class="role-tag tag-builder">Developers</div>
+                  <ul>
+                    <li>Initialize GitHub repo with branching strategy (main, dev, feature branches)</li>
+                    <li>Set up development environment and project scaffold</li>
+                    <li>Begin building MVP v2.0 from validated requirements</li>
+                    <li>Document all successful prompts in shared Google Doc (GAPS Workflow)</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-designer">Designers</div>
+                  <ul>
+                    <li>1:1 training with supervisors to define Information Architecture v1</li>
+                    <li>Lock routes, navigation structure, and core objects</li>
+                    <li>Create wireframes aligned with IA v1 for Developer reference</li>
+                    <li>Apply senior-first design principles: large targets, high contrast, clear nav</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-researcher">Researchers</div>
+                  <ul>
+                    <li>Organize all research findings into a structured repository</li>
+                    <li>Validate user stories against usability testing data</li>
+                    <li>Create research synthesis doc for team reference</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-pm">Project Managers</div>
+                  <ul>
+                    <li>Set up team kanban board in Jira with sprint cards, and the team space in Confluence</li>
+                    <li>Establish GAPS Workflow: prompt documentation + GitHub standards</li>
+                    <li>Manage GitHub access and permissions for team</li>
+                    <li>Track Alan's architecture talk takeaways as team guidelines</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div>
+              <div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div>
+              <div class="bar-segment" style="width:10%;background:var(--hrs-client)"></div>
+              <div class="bar-segment" style="width:52.5%;background:var(--hrs-deepwork)"></div>
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div>
+              <div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div>
+              <div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Stand-up <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Sync <span class="bar-hrs">1</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Client <span class="bar-hrs">2</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Deep Work <span class="bar-hrs">10.5</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Check-in <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Learning <span class="bar-hrs">2</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Docs <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Repo initialized. GAPS Workflow established. IA v1 finalized and approved.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What happens in your body when you watch someone struggle with technology?"</div>
+        <div class="hum-detail">Heartspace dialogue. Empathy in tech.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 6 -->
+    <div class="week-card" style="animation-delay:0.75s" data-week="6">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">06</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Sep 21-25 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-halfday">+ Half Day: Sat Sep 26, 9am-12pm</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Feature Freeze Demo Day</h5>
+          <p>Teams demo working core flow. Feature freeze locked in person. Guerrilla usability intro. 9 AM - 12 PM.</p>
+          <span class="role-tag designer">Designers: guerrilla testing</span><span class="role-tag researcher">Researchers: guerrilla testing</span>
+        </div>
+        <div class="deliverables">Working core flow. Prompt docs. Internal demo.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Half Day Schedule (9 AM - Noon)</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p><strong>9:00-9:15</strong> Coffee + check-in</p>
+                <p><strong>9:15-10:30</strong> Internal demo: each team presents working core flow. All 4 teams demo, 15 min each + 3 min Q&amp;A.</p>
+                <p><strong>10:30-10:45</strong> Break</p>
+                <p><strong>10:45-11:45</strong> Guerrilla usability testing intro (Designers + Researchers). Task-based evaluation methodology. How to run a session, what to observe, how to document.</p>
+                <p><strong>11:45-12:00</strong> Feature freeze declared. No new features past this point. Only bug fixes, usability improvements, and refinements allowed.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Virtual Week Focus</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Finish end-to-end application. All prompts must explicitly reference Information Architecture and user flow. Prompt documentation becomes mandatory (GAPS Workflow).</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Role-Specific Deep Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <div class="role-block">
+                  <div class="role-tag tag-builder">Developers</div>
+                  <ul>
+                    <li>Complete end-to-end application flow (all core features connected)</li>
+                    <li>Ensure prompts reference IA v1 routes and user flow</li>
+                    <li>Prepare demo-ready build for Saturday presentation</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-designer">Designers</div>
+                  <ul>
+                    <li>Polish UI for demo: consistent styling, readable typography, accessible colors</li>
+                    <li>Learn guerrilla usability testing methodology (Saturday intro session)</li>
+                    <li>Prepare test scenarios for Week 7 guerrilla testing</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-researcher">Researchers</div>
+                  <ul>
+                    <li>Learn guerrilla testing methodology alongside Designers</li>
+                    <li>Prepare observation templates for Week 7 testing sessions</li>
+                    <li>Review current research findings for gaps before feature freeze</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-pm">Project Managers</div>
+                  <ul>
+                    <li>Coordinate demo logistics: order, timing, tech setup</li>
+                    <li>Verify prompt documentation is up to date for feature freeze</li>
+                    <li>Update kanban: close completed cards, create bug-only backlog</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div>
+              <div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div>
+              <div class="bar-segment" style="width:15%;background:var(--hrs-client)"></div>
+              <div class="bar-segment" style="width:47.5%;background:var(--hrs-deepwork)"></div>
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div>
+              <div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div>
+              <div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>In-Person Workshop <span class="bar-hrs">3</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">9.5</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Working core flow. Prompt docs up to date. Internal demo completed. Feature freeze locked.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What's one thing you noticed this week that you almost missed?"</div>
+        <div class="hum-detail">Handspace dialogue. Attention to detail.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 7 -->
+    <div class="week-card" style="animation-delay:0.85s" data-week="7">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">07</div>
+        <div class="week-meta">
+                    <div class="format-badge format-virtual">Sep 28 - Oct 2 (Mon-Fri) &middot; Async + Virtual</div>
+        </div>
+        <div class="week-content">
+          <h5>Usability Stabilization</h5>
+          <p>Guerrilla testing with 3-5 users.</p>
+        </div>
+        <div class="deliverables">Usability report. Pivot/persevere decision.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Team Sync Focus</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Review guerrilla testing plan. Assign testing pairs (Designer + Researcher). Define UX metrics: task success rate, time on task, error count, user satisfaction.</p>
+                <p><strong>Agenda:</strong> (1) Testing schedule for the week, (2) review test scenarios from Week 6 training, (3) discuss what "pivot vs. persevere" means for each team, (4) assign report ownership.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Client / Field Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <p>Conduct guerrilla usability testing with 3-5 new users. Task-based evaluations using the working prototype. Focus on task success, clarity, and feedback. Not aesthetics.</p>
+                <p>Each session: 20-30 min per user. Designer facilitates, Researcher observes and documents. Record observations, not video. Capture exact quotes.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)">
+                <span class="detail-label">Role-Specific Deep Work</span>
+                <span class="detail-chevron">&#9656;</span>
+              </div>
+              <div class="detail-content">
+                <div class="role-block">
+                  <div class="role-tag tag-builder">Developers</div>
+                  <ul>
+                    <li>Fix critical bugs surfaced during Week 6 demo</li>
+                    <li>Stabilize core flow: error handling, edge cases, loading states</li>
+                    <li>Address technical debt from rapid prototyping phase</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-designer">Designers</div>
+                  <ul>
+                    <li>Lead guerrilla testing sessions with end users</li>
+                    <li>Document task success rates and friction points</li>
+                    <li>Sketch quick fixes for usability issues found during testing</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-researcher">Researchers</div>
+                  <ul>
+                    <li>Observe and document all testing sessions</li>
+                    <li>Analyze patterns in user behavior across sessions</li>
+                    <li>Compile usability findings report with clear pivot/persevere insights</li>
+                  </ul>
+                </div>
+                <div class="role-block">
+                  <div class="role-tag tag-pm">Project Managers</div>
+                  <ul>
+                    <li>Track testing results and bug reports in kanban</li>
+                    <li>Compile pivot/persevere decision framework for team</li>
+                    <li>Prepare usability findings presentation for Week 8 review</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div>
+              <div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div>
+              <div class="bar-segment" style="width:15%;background:var(--hrs-client)"></div>
+              <div class="bar-segment" style="width:47.5%;background:var(--hrs-deepwork)"></div>
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div>
+              <div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div>
+              <div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Usability Testing <span class="bar-hrs">3</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">9.5</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span>
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Usability findings report with clear insights for pivot/persevere decision.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"When is it hard to say what you really think?"</div>
+        <div class="hum-detail">Headspace dialogue. Forming opinions in teams.</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Phase 3: Iteration -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-header" style="animation-delay:0.8s">
+      <span class="phase-dot" style="background:var(--iteration)"></span>
+      <h3>Iteration + Redesign</h3>
+      <span class="phase-weeks">Weeks 8-9</span>
+      <span class="epoch-badge" style="background:rgba(139,107,74,0.2);color:var(--iteration)">Opinion</span>
+    </div>
+
+    <!-- WEEK 8 -->
+    <div class="week-card" style="animation-delay:0.9s" data-week="8">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">08</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Oct 5-9 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-allday">+ Full Day: Sat Oct 10</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Antigravity CLI Workshop + Team Brain Goes Local</h5>
+          <p>Mandatory office hours 9am-5pm at CGCS. Hands-on setup. The Team Brain migrates from cloud (Docs + NotebookLM) to local (Markdown + Antigravity CLI).<span class="hum-only"> First hour: HUM check-in on empathy growth and forming opinions.</span></p>
+          <div class="shrink-note"><b>Lightened:</b> First-touch CLI only. Obsidian is optional (Finder or VS Code work too). No mastery expected, just one working query against your own brain.</div>
+        </div>
+        <div class="deliverables">Antigravity CLI installed and verified.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="timeline">
+            <div class="time-block hum-only-block">
+              <div class="time-range">9:00-10:00</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM Check-in</span> "What's a belief you changed your mind about?" Heartspace dialogue. Openness to feedback. Empathy growth reflection.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range"><span class="hum-only">10:00</span><span class="standard-only">9:00</span>-10:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Prerequisites + Setup</span> Verify Google account access. Read Google documentation: "Antigravity CLI installation, execution, and releases." Install Node.js/npm if needed. Troubleshoot environment issues with supervisors.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">10:30-10:45</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">10:45-12:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Installation Lab</span> Verify Antigravity CLI and OpenCode, both installed back in Week 0. Authenticate with Google Cloud. Run first commands. Verify the tool works: generate a simple output, test a prompt, confirm API connectivity. Supervisors circulate for 1:1 troubleshooting.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">12:00-1:00</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Lunch</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">1:00-2:30</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Hands-on Workshop + Team Brain Goes Local</span> Export the team's Google Docs (the Weeks 1-7 Team Brain) to Markdown (File &gt; Download &gt; Markdown) into one local folder, then point Antigravity CLI at it: analyze a file, summarize the brain, generate output. Obsidian optional as the Markdown viewer (VS Code or Finder also work). Project Managers lead the migration; each role practices a use case: Developers (code), Designers (copy/content), Researchers (data summarization).</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:30-2:45</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:45-4:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Team Challenge + Model Comparison</span> Each team uses Antigravity CLI to solve a real problem from their project. Then <strong>run the same prompt through OpenCode</strong> and compare the two outputs side by side. Free models are fair game. Finally, <strong>use an LLM as judge</strong>: ask a model to assess which output is better and why. Document prompts that worked and didn't, and where the models disagreed.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">4:00-4:45</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Show + Tell</span> Each team shares their best CLI workflow (3 min each) <strong>and one case where Antigravity and OpenCode gave meaningfully different answers</strong>. Cross-team learning: what prompts worked, what patterns emerged, and how you decide which tool to trust.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">4:45-5:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Wrap-up</span> Verify all 11 interns have Antigravity CLI installed and working. Assignment: use Antigravity CLI at least once on your project this week and document the result.</div>
+            </div>
+          </div>
+          <div class="hours-summary-row">
+            <div class="hrs-item"><span class="hrs-label">In-person:</span> <span class="hrs-value">8</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">Self-directed (rest of week):</span> <span class="hrs-value">~12</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item hrs-total"><span class="hrs-label">Week Total:</span> <span class="hrs-value">~20</span> <span class="hrs-label">hrs</span></div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Antigravity CLI installed and verified. Team Brain exported to local Markdown and queried via CLI. First CLI-generated output documented. Obsidian set up as the viewer if the team wants it.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">1 hr check-in</div>
+        <div class="hum-prompt">"What's a belief you changed your mind about?"</div>
+        <div class="hum-detail">Heartspace dialogue. Openness to feedback. Empathy growth reflection.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 9 -->
+    <div class="week-card" style="animation-delay:0.95s" data-week="9">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">09</div>
+        <div class="week-meta">
+                    <div class="format-badge format-virtual">Oct 12-16 (Mon-Fri) &middot; Async + Virtual</div>
+        </div>
+        <div class="week-content">
+          <h5>Redesign with Antigravity CLI</h5>
+          <p>Backend introduction. Pivot/persevere execution.</p>
+          <span class="role-tag builder">Developers: backend concepts (Firebase, VertexAI)</span>
+        </div>
+        <div class="deliverables">Redesign fixes. Usability report updated.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Team Sync Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Review pivot/persevere decision from Week 7 usability report. Plan redesign priorities. Discuss Antigravity CLI capabilities learned in Week 8 workshop.</p>
+                <p><strong>Agenda:</strong> (1) Pivot/persevere decision review, (2) identify top 3 redesign priorities, (3) assign Antigravity CLI redesign tasks, (4) Developers: backend intro status check.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Client / Field Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Validate redesign direction with 1-2 users if the team pivoted. Quick check: does the new direction resonate? 15-20 min informal sessions.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Introduction to backend concepts: Firebase, VertexAI, API integration</li><li>Begin implementing backend features for the redesigned product</li><li>Connect front-end prototype to backend services</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>Implement redesign fixes using Antigravity CLI (GAPS Workflow: document all prompts)</li><li>Maintain source control discipline: branch, commit, PR</li><li>Update IA if pivot changed navigation or core objects</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Refine UX report based on pivot/persevere decision</li><li>Validate redesign against original user research findings</li><li>Prepare testing plan for next validation round</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Manage redesign sprint in kanban</li><li>Ensure GAPS Workflow compliance: prompt docs, GitHub PRs</li><li>Track Antigravity CLI usage and effectiveness across team</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:52.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Client / Field Work <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">10.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Redesigned app. Prompt documentation up to date. Backend services connected (Developers).</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What would you fight for in this product?"</div>
+        <div class="hum-detail">Handspace dialogue. Conviction + compromise.</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Phase 4: Refinement -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-header" style="animation-delay:1s">
+      <span class="phase-dot" style="background:var(--refinement)"></span>
+      <h3>Refinement + Validation</h3>
+      <span class="phase-weeks">Weeks 10-12</span>
+      <span class="epoch-badge" style="background:rgba(122,91,138,0.2);color:var(--refinement)">Creativity</span>
+    </div>
+
+    <!-- WEEK 10 -->
+    <div class="week-card" style="animation-delay:1.05s" data-week="10">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">10</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Oct 19-23 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-halfday">+ Half Day Check-in: Sat Oct 24, 9am-12pm</div> <div class="format-badge format-new">New &middot; to plan</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Multi-Agent Workflows + Integration Checkpoint</h5>
+          <p>High-fi usability testing. Agent orchestration: planner, builder, reviewer, tester. Half day: each team demos its orchestration end to end and presents high-fi results. Decision: which agent workflow ships. 9 AM - 12 PM.</p>
+          <div class="shrink-note"><b>Lightened:</b> Conceptual exposure plus one small experiment. You are not building production agents. Understanding the idea is the win.</div>
+          <span class="role-tag designer">Designers: hi-fi task-based testing</span>
+        </div>
+        <div class="deliverables">Agent experiment. Usability validation report.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Half Day Schedule (9 AM - Noon)</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p><strong>9:00-9:15</strong> Coffee + check-in</p>
+                <p><strong>9:15-10:15</strong> Integration demos. Each team runs its multi-agent workflow end to end, live: planner, builder, reviewer, tester. Show where it broke, not just where it worked.</p>
+                <p><strong>10:15-10:30</strong> Break</p>
+                <p><strong>10:30-11:15</strong> High-fi usability results. Each team presents task-based evaluation findings and the low-fi vs high-fi comparison. Has usability actually improved?</p>
+                <p><strong>11:15-12:00</strong> Integration decision. Each team commits to which agent workflow ships and which experiments get dropped. Supervisors confirm scope is still deliverable by Go/No-Go in Week 12.</p>
+                <p style="margin-top:10px;padding:8px 10px;border:1px dashed var(--hum-accent);border-radius:6px;color:var(--hum-accent);"><strong>To plan:</strong> this half day has an open guest slot. Candidate: an engineer or practitioner on agent orchestration in production. Guest would take the 10:30-11:15 block and the team presentations move to 9:15-10:15. Not yet booked.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Virtual Week Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Introduce multi-agent workflow concepts. Discuss: planner, builder, reviewer, tester agents. When to use agents and when NOT to. Plan high-fi prototype testing.</p>
+                <p><strong>Agenda:</strong> (1) Multi-agent concept overview, (2) assign agent experiment tasks, (3) Designers: high-fi testing schedule with 2+ users, (4) review redesign progress, (5) prep the Saturday integration demo.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Client / Field Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Designers conduct task-based evaluations with 2+ end users using high-fidelity prototypes. Compare results with earlier low-fi testing from Week 7. Focus on: has usability improved?</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Experiment with multi-agent orchestration: set up planner + builder + reviewer + tester agents</li><li>Practice task decomposition and agent handoffs</li><li>Document guardrails: what agents can and cannot do reliably</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>Prepare high-fi prototypes for usability testing</li><li>Conduct task-based evaluations with 2+ end users</li><li>Compare high-fi results with low-fi results: what improved, what didn't</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Document agent orchestration experiments: what worked, what failed</li><li>Analyze high-fi testing results alongside Designers</li><li>Write usability validation report comparing low-fi vs high-fi results</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Coordinate agent experiments across team</li><li>Track high-fi testing schedule and results</li><li>Compile latest usability validation report</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:47.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>In-Person Workshop <span class="bar-hrs">3</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">9.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Agent orchestration experiment + reflection. Latest usability validation report (high-fi vs low-fi comparison). Integration decision: which agent workflow ships.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What's the most creative solution you've seen to an impossible problem?"</div>
+        <div class="hum-detail">Headspace dialogue. Creative problem-solving.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 11 -->
+    <div class="week-card" style="animation-delay:1.1s" data-week="11">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">11</div>
+        <div class="week-meta">
+                    <div class="format-badge format-virtual">Oct 26-30 (Mon-Fri) &middot; Async + Virtual</div>
+        </div>
+        <div class="week-content">
+          <h5>IA Rigor + Feature Refinement</h5>
+          <p>Accessibility, readability, design token consistency.</p>
+          <div class="shrink-note"><b>Lightened:</b> Pick the highest-impact checks, not all of them. Quality over completeness. Done-and-useful beats exhaustive.</div>
+          <span class="role-tag designer">Designers: system guardians</span><span class="role-tag researcher">Researchers: prompt/GitHub audit</span>
+        </div>
+        <div class="deliverables">IA analysis. Refactor merges. Prompt docs.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Team Sync Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Review IA analysis results. Discuss accessibility findings and design token consistency. Plan refinement priorities for the final sprint before Go/No-Go.</p>
+                <p><strong>Agenda:</strong> (1) IA analysis agent results walkthrough, (2) accessibility gap list, (3) assign refactoring tasks, (4) prompt documentation audit status.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Client / Field Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Present refined prototype to stakeholders for feedback. This is the last chance for directional input before Go/No-Go in Week 12.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Apply IA analysis agent to the codebase</li><li>Refactor for accessibility, readability, and hierarchy</li><li>Merge refactored code via proper Git PRs</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>Act as system guardians: review design token consistency across all screens</li><li>Validate accessibility standards (contrast, touch targets, font sizes)</li><li>Final visual hierarchy review</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Review prompt documentation for completeness and accuracy</li><li>Verify GitHub compliance (all code has PRs, no direct pushes to main)</li><li>Prepare IA analysis report with findings and recommendations</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Track refactoring merges and resolve merge conflicts</li><li>Ensure prompt documentation is complete and up to date</li><li>Prepare for Week 12 Go/No-Go: checklist of readiness criteria</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:52.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Client / Field Work <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">10.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> IA analysis report. Refactor merges at Git. Prompt documentation up to date. Functional prototype.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What would this product look like if it was made with love?"</div>
+        <div class="hum-detail">Heartspace dialogue. Craft and care.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 12 -->
+    <div class="week-card" style="animation-delay:1.15s" data-week="12">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">12</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Nov 2-6 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-halfday">+ Half Day: Sat Nov 7, 9am-12pm</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Go/No-Go Day</h5>
+          <p>Present quantitative usability results in person. 10 new users tested. Ship-or-don't-ship decision. 9 AM - 12 PM.</p>
+          <div class="shrink-note"><b>Lightened:</b> "No-Go" is a fully acceptable, even admirable, answer. Honesty beats shipping something that isn't ready.</div>
+          <span class="role-tag builder">Developers: MVP compliance edits</span><span class="role-tag all-roles">All: quantitative testing</span>
+        </div>
+        <div class="deliverables">Final quant report. Go/No-Go determination.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Half Day Schedule (9 AM - Noon)</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p><strong>9:00-9:15</strong> Coffee + check-in</p>
+                <p><strong>9:15-10:30</strong> Quantitative testing session: measure average task completion time for main features with new users. All teams test simultaneously.</p>
+                <p><strong>10:30-10:45</strong> Break</p>
+                <p><strong>10:45-11:30</strong> Data analysis + Go/No-Go framework discussion. Each team presents: task completion times, error rates, user satisfaction scores.</p>
+                <p><strong>11:30-12:00</strong> Go/No-Go determination. Announce next steps for each team. If Go: move to deployment prep. If No-Go: identify blockers and remediation plan.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Virtual Week Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Deep quantitative usability testing throughout the week. Target: 10 new users testing the main features. Measure: average task completion time, error rate, user satisfaction (1-5 scale).</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Fix bugs found during quantitative testing</li><li>Ensure MVP meets minimal client requirements</li><li>Optimize performance for testing sessions</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>Run quantitative testing sessions (time each task, record errors)</li><li>Compile task completion data into spreadsheet</li><li>Quick UI fixes between testing rounds</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Design quantitative testing protocol: scripts, metrics, recording templates</li><li>Recruit 10 new users (not previously tested)</li><li>Compile final quantitative usability report with charts and data</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Coordinate testing schedule: 10 users across the week</li><li>Prepare Go/No-Go readiness checklist</li><li>Present team's data at Saturday determination session</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:47.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>In-Person Workshop <span class="bar-hrs">3</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">9.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Final quantitative usability report. Go/No-Go readiness determination.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What would make you proud to show this to your family?"</div>
+        <div class="hum-detail">Handspace dialogue. Ownership and craft.</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Phase 5: Deployment -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="phase-header" style="animation-delay:1.2s">
+      <span class="phase-dot" style="background:var(--deployment)"></span>
+      <h3>Deployment + Reflection</h3>
+      <span class="phase-weeks">Weeks 13-16</span>
+      <span class="epoch-badge" style="background:rgba(74,106,90,0.2);color:var(--deployment)">Hope</span>
+    </div>
+
+    <!-- WEEK 13 -->
+    <div class="week-card" style="animation-delay:1.25s" data-week="13">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">13</div>
+        <div class="week-meta">
+                    <div class="format-badge format-virtual">Nov 9-13 (Mon-Fri) &middot; Async + Virtual</div>
+        </div>
+        <div class="week-content">
+          <h5>Debugging + Pre-Deployment</h5>
+          <p>Technical debt, error handling, GitHub collaboration.</p>
+        </div>
+        <div class="deliverables">Issue backlog. Stability checklist.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Team Sync Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Review Go/No-Go decision from Week 12. Prioritize bug backlog. Plan debugging sprints. Discuss: what does "production-ready" mean for our app?</p>
+                <p><strong>Agenda:</strong> (1) Go/No-Go outcome and action items, (2) triage bug backlog by severity, (3) assign debugging tasks, (4) continued quantitative testing plan (10 new users).</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Client / Field Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Continue quantitative usability testing: 2-3 main tasks with 10 new users. This is the final testing push before deployment. Focus on measuring improvement since Week 12.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Debug in production-like environments</li><li>Manage technical debt: clean up prototype shortcuts</li><li>Improve error handling and edge case coverage</li><li>Use Antigravity CLI agents responsibly for fixes (document all prompts)</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>Fix UI issues surfaced in quantitative testing</li><li>Ensure consistent styling across all screens</li><li>Edit solution to comply with client minimal requirements</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Continue quantitative testing with new users</li><li>Compile final quantitative testing report</li><li>Document improvements since Week 12 testing</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Manage issue backlog: track bugs from open to resolved</li><li>Maintain stability checklist for deployment readiness</li><li>Coordinate final testing push</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:52.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Deployment Testing <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">10.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Issue backlog. Stability checklist. Quantitative usability testing report.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What's one thing about this project that surprised you?"</div>
+        <div class="hum-detail">Headspace dialogue. Reflection begins.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 14 -->
+    <div class="week-card" style="animation-delay:1.3s" data-week="14">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">14</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Nov 16-20 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-halfday">+ Half Day Check-in: Sat Nov 21, 9am-12pm</div> <div class="format-badge format-new">New &middot; to plan</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Deployment to Google VertexAI + Readiness Gate</h5>
+          <p>Production implications. Half day: production readiness review before final demos. This is the last room before Dec 5. 9 AM - 12 PM.</p>
+          <span class="role-tag builder">Developers: production deploy</span><span class="role-tag all-roles">All: readiness review</span>
+        </div>
+        <div class="deliverables">App deployed. Readiness gate cleared.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Half Day Schedule (9 AM - Noon)</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p><strong>9:00-9:15</strong> Coffee + check-in</p>
+                <p><strong>9:15-10:15</strong> Live production walkthrough. Each team opens its deployed app in front of the room and runs the main flow against the live environment, not localhost.</p>
+                <p><strong>10:15-10:30</strong> Break</p>
+                <p><strong>10:30-11:15</strong> Readiness review against the checklist: monitoring, API keys and secrets, rollback plan, error handling, known bugs. Teams name what is still broken. Honesty is the deliverable here.</p>
+                <p><strong>11:15-12:00</strong> Final-demo planning. Each team leaves with a written punch list for Weeks 15 and 16, and supervisors flag anything that will not survive to Dec 5. Note: Week 15 is Thanksgiving week and there is no Saturday, so this is the last in-person checkpoint before Final Demos.</p>
+                <p style="margin-top:10px;padding:8px 10px;border:1px dashed var(--hum-accent);border-radius:6px;color:var(--hum-accent);"><strong>To plan:</strong> this half day has an open guest slot. Candidates: Fred Lover (Wk 15 guest lecture could move here instead), or a practitioner on shipping and maintaining public-sector software after handoff. Guest would take the 10:30-11:15 block. Not yet booked.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Virtual Week Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Review deployment plan. Discuss production environment vs. development. Assign deployment roles and responsibilities. Implications of editing code in production.</p>
+                <p><strong>Agenda:</strong> (1) Deployment checklist walkthrough, (2) production environment setup, (3) assign roles: who deploys, who tests, who monitors, (4) rollback plan if something breaks, (5) get deployed before Saturday, the readiness gate reviews a live app.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Client / Field Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Deployment week: no external user testing. Focus entirely on getting the app live. Post-deployment: quick smoke test with 1-2 users to verify the production version works.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Deploy application to Google VertexAI</li><li>Configure production environment: API keys, security settings, monitoring</li><li>Test deployed app against development version</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>Final UI/UX check in production environment</li><li>Verify responsive behavior on different devices</li><li>Test accessibility in the live deployment</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Test deployed app against original user requirements</li><li>Document any production-specific issues or differences</li><li>Prepare final comparison: prototype vs. production</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Coordinate deployment timeline and sequence</li><li>Manage deployment checklist: each item verified and checked off</li><li>Communicate deployment status to supervisors</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:47.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:15%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>In-Person Workshop <span class="bar-hrs">3</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">9.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">3</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> App deployed to VertexAI. Production smoke test passed. Readiness gate cleared with a written punch list for Weeks 15-16.</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"Who will benefit from this after we're gone?"</div>
+        <div class="hum-detail">Heartspace dialogue. Legacy and impact.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 15 -->
+    <div class="week-card" style="animation-delay:1.35s" data-week="15">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">15</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Nov 23-27 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge" style="background:rgba(196,149,106,0.2);color:#c4956a;">Thanksgiving Week</div></div>
+        </div>
+        <div class="week-content">
+          <h5>OWASP Review + Sustainability</h5>
+          <p>No new features. Section 508 accessibility check. Final documentation.</p>
+          <span class="guest-tag">Guest: Frank Copperfield (Cybersecurity)</span>
+        </div>
+        <div class="deliverables">Release candidate. Final docs. 508 check.</div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="week-detail">
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Team Sync Focus</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>Review Frank Copperfield's cybersecurity lecture. Discuss OWASP top 10 findings. Plan final polish sprint. No new features. Intro to sustainability and handoff planning.</p>
+                <p><strong>Agenda:</strong> (1) OWASP security findings review, (2) assign polish tasks (UI, performance, content), (3) Section 508 accessibility check status, (4) sustainability and handoff discussion.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Client / Field Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <p>No external testing. Internal polish only. Prepare handoff documentation for client: how to use the app, how to report issues, who maintains it after the internship.</p>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-header" onclick="toggleDetail(this)"><span class="detail-label">Role-Specific Deep Work</span><span class="detail-chevron">&#9656;</span></div>
+              <div class="detail-content">
+                <div class="role-block"><div class="role-tag tag-builder">Developers</div>
+                  <ul><li>Security review using OWASP top 10 checklist</li><li>Performance tuning: load times, API response times</li><li>Fix any security vulnerabilities found</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-designer">Designers</div>
+                  <ul><li>UI polish: spacing, alignment, typography consistency</li><li>Content clarity: review all user-facing text</li><li>Section 508 accessibility check (final compliance review)</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-researcher">Researchers</div>
+                  <ul><li>Final review of all prompt logs across the semester</li><li>Document lessons learned and recommendations</li><li>Contribute to sustainability plan: what should the next cohort know</li></ul></div>
+                <div class="role-block"><div class="role-tag tag-pm">Project Managers</div>
+                  <ul><li>Final documentation submission: compile all deliverables</li><li>Coordinate release candidate build</li><li>Manage handoff planning: ownership, maintenance, future development</li></ul></div>
+              </div>
+            </div>
+          </div>
+          <div class="hours-bar">
+            <div class="hours-bar-track">
+              <div class="bar-segment" style="width:3.75%;background:var(--hrs-standup)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-sync)"></div><div class="bar-segment" style="width:5%;background:var(--hrs-client)"></div><div class="bar-segment" style="width:52.5%;background:var(--hrs-deepwork)"></div><div class="bar-segment" style="width:3.75%;background:var(--hrs-checkin)"></div><div class="bar-segment" style="width:10%;background:var(--hrs-learning)"></div><div class="bar-segment" style="width:20%;background:var(--hrs-docs)"></div>
+            </div>
+            <div class="hours-bar-legend">
+              <span class="bar-label"><span class="bar-dot" style="background:var(--hrs-standup)"></span>Team Check-ins (optional) <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-sync)"></span>Team Sync <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-client)"></span>Client Handoff <span class="bar-hrs">1</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-deepwork)"></span>Role-Specific Deep Work <span class="bar-hrs">10.5</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-checkin)"></span>Cross-Team Check-in <span class="bar-hrs">0.75</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-learning)"></span>Individual Learning <span class="bar-hrs">2</span></span><span class="bar-label"><span class="bar-dot" style="background:var(--hrs-docs)"></span>Documentation / Portfolio <span class="bar-hrs">4</span></span>
+            </div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> Release candidate build. Final documentation submission. Section 508 accessibility check (Designers).</div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">15 min team sync opener</div>
+        <div class="hum-prompt">"What did this experience teach you about yourself?"</div>
+        <div class="hum-detail">Handspace dialogue. Personal growth.</div>
+      </div>
+    </div>
+
+    <!-- WEEK 16 -->
+    <div class="week-card" style="animation-delay:1.4s" data-week="16">
+      <div class="week-main" onclick="toggleWeek(this)">
+        <div class="week-num">16</div>
+        <div class="week-meta">
+                    <div class="week-badges"><div class="format-badge format-virtual">Nov 30 - Dec 4 (Mon-Fri) &middot; Async + Virtual</div> <div class="format-badge format-allday">+ Full Day: Sat Dec 5, 9am-5pm (Closing Ceremony)</div></div>
+        </div>
+        <div class="week-content">
+          <h5>Final Demos + Handoff</h5>
+          <p>Sustainability discussion. Miro board reflection. Closing celebration.<span class="hum-only"> Full 90-min HUM Closing session.</span></p>
+        </div>
+        <div class="deliverables">App online. Final demo. Class reflection.<span class="hum-only"> HUM closing insights.</span></div>
+        <div class="expand-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+      </div>
+      <div class="schedule-dropdown">
+        <div class="schedule-inner">
+          <div class="timeline">
+            <div class="time-block hum-only-block">
+              <div class="time-range">9:00-10:30</div>
+              <div class="time-dot dot-hum"></div>
+              <div class="time-desc"><span class="block-label label-hum">HUM Closing</span> "What will you carry forward?" Full 90-min capstone: all three spaces (Heartspace, Understander, Motivator). Final reflections captured for Willie's white paper + HUM repository.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range"><span class="hum-only">10:30</span><span class="standard-only">9:00</span>-11:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Final Demo Prep</span> Teams finalize demo scripts and presentation order. Last-minute bug fixes. Supervisors confirm app is deployed and accessible to real users.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">11:00-12:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Final Demos</span> Each team presents their deployed application (10 min + 5 min Q&amp;A). Client, supervisors, and faculty advisors attend. Live demo of the working product.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">12:00-1:00</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Lunch + Celebration</span> Catered lunch. Informal celebration. Recognize standout contributions.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">1:00-2:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Client Handoff</span> Walk client through deployed app, documentation, and maintenance guide. Transfer ownership. Discuss sustainability: who maintains it, how updates happen, what the client needs to know.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:00-2:15</div>
+              <div class="time-dot dot-break"></div>
+              <div class="time-desc"><span class="block-label label-break">Break</span></div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">2:15-3:15</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Sustainability Discussion</span> Facilitated session: ownership, future maintenance, lessons for the next cohort. What worked, what they'd change. Institutional memory capture.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">3:15-4:15</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Miro Board Reflection</span> Anonymous post-its on Miro: what you learned, what surprised you, advice for next cohort. Gallery walk through all teams' boards.</div>
+            </div>
+            <div class="time-block">
+              <div class="time-range">4:15-5:00</div>
+              <div class="time-dot"></div>
+              <div class="time-desc"><span class="block-label label-gaps">Closing + Next Steps</span> Final words from supervisors. Certificates or recognition. LinkedIn recommendations discussed. Alumni network / staying connected. Group photo.</div>
+            </div>
+          </div>
+          <div class="hours-summary-row">
+            <div class="hrs-item"><span class="hrs-label">In-person:</span> <span class="hrs-value">8</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item"><span class="hrs-label">Self-directed (rest of week):</span> <span class="hrs-value">~12</span> <span class="hrs-label">hrs</span></div>
+            <span class="hrs-sep">|</span>
+            <div class="hrs-item hrs-total"><span class="hrs-label">Week Total:</span> <span class="hrs-value">~20</span> <span class="hrs-label">hrs</span></div>
+          </div>
+          <div class="schedule-deliverables"><strong>Deliverables:</strong> App deployed and online. Final demo completed. Client handoff done. Class reflection submitted.<span class="hum-only"> HUM closing insights captured.</span></div>
+          <div class="schedule-source">Source: 00_AI_Internship/15 GAPS Syllabus v8.md</div>
+        </div>
+      </div>
+      <div class="hum-row">
+        <div class="hum-label">Full 90-min HUM Closing</div>
+        <div class="hum-prompt">"What will you carry forward?"</div>
+        <div class="hum-detail">All three spaces. Final reflections captured for Willie's white paper + HUM repository. Capstone session.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- Summary Bar -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="summary-bar">
+    <div class="summary-title">Semester Overview</div>
+    <div class="summary-stats">
+      <div class="stat">
+        <div class="stat-num">16</div>
+        <div class="stat-label">Weeks</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num">5</div>
+        <div class="stat-label">Full Days</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num">4</div>
+        <div class="stat-label">Half Days</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num">7</div>
+        <div class="stat-label">Virtual Weeks</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num">~68</div>
+        <div class="stat-label">Structured Hrs</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat stat-highlight">
+        <div class="stat-num">~320</div>
+        <div class="stat-label">Target Total Hrs</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num">16</div>
+        <div class="stat-label">Interns</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="footer">
+    GAPS Internship, Fall 2026 &middot; Center for Government and Civic Service &middot; Austin Community College<br>
+    <a href="https://cgcs-acc.org/gaps">cgcs-acc.org/gaps</a>
+  </div>
+</div>
+
+<script>
+function toggleHum(checkbox) {
+  const calendar = document.getElementById('calendar');
+  if (checkbox.checked) {
+    calendar.classList.add('hum-active');
+  } else {
+    calendar.classList.remove('hum-active');
+  }
+}
+
+function setTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.main-nav-tab').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setView(view, btn) {
+  const calendar = document.getElementById('calendar');
+  if (view === 'shrink') {
+    calendar.classList.add('shrink-active');
+  } else {
+    calendar.classList.remove('shrink-active');
+  }
+  document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  // Content height changed: recalc any open dropdowns so they don't clip or leave gaps
+  document.querySelectorAll('.week-card.expanded .schedule-dropdown').forEach(function(dd) {
+    dd.style.maxHeight = dd.scrollHeight + 'px';
+  });
+}
+
+function toggleDetail(el) {
+  var section = el.closest('.detail-section');
+  section.classList.toggle('expanded');
+  var dropdown = el.closest('.schedule-dropdown');
+  if (dropdown) {
+    // Immediately give room for the CSS transition to expand into
+    dropdown.style.maxHeight = (dropdown.scrollHeight + 2000) + 'px';
+    // After the inner transition completes (400ms), set to actual height
+    setTimeout(function() {
+      dropdown.style.maxHeight = dropdown.scrollHeight + 'px';
+    }, 500);
+  }
+}
+
+// HUM defaults to OFF on load
+
+function toggleWeek(mainEl) {
+  const card = mainEl.closest('.week-card');
+  const dropdown = card.querySelector('.schedule-dropdown');
+
+  if (card.classList.contains('expanded')) {
+    dropdown.style.maxHeight = '0px';
+    card.classList.remove('expanded');
+  } else {
+    card.classList.add('expanded');
+    dropdown.style.maxHeight = dropdown.scrollHeight + 'px';
+    setTimeout(function() {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 150);
+  }
+}
+
+// Handle window resize: recalculate max-height for all expanded dropdowns
+window.addEventListener('resize', function() {
+  document.querySelectorAll('.week-card.expanded .schedule-dropdown').forEach(function(dd) {
+    dd.style.maxHeight = dd.scrollHeight + 'px';
+  });
+});
+</script>
+
+</body>
+</html>
