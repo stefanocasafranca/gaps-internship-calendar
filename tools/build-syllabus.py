@@ -118,7 +118,7 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
   html{-webkit-print-color-adjust:exact; print-color-adjust:exact}
   body{margin:0;background:var(--paper);color:var(--ink);orphans:3;widows:3;
        font-family:'Outfit',-apple-system,'Segoe UI',sans-serif;
-       font-size:9.9pt;line-height:1.62;font-weight:400;
+       font-size:9.3pt;line-height:1.5;font-weight:400;
        text-rendering:geometricPrecision}
   a{color:var(--gold);text-decoration:none;border-bottom:.5px solid rgba(138,109,36,.45)}
   strong,b{font-weight:600;color:var(--ink)}
@@ -147,8 +147,8 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
   .lede{color:var(--ink-2);max-width:74ch;margin-bottom:12px}
 
   /* ---- definition rows: the syllabus workhorse ---- */
-  .row{display:grid;grid-template-columns:104px 1fr;gap:0 18px;
-       padding:7px 0;border-top:1px solid var(--rule-soft);break-inside:avoid}
+  .row{display:grid;grid-template-columns:100px 1fr;gap:0 16px;
+       padding:4.5px 0;border-top:1px solid var(--rule-soft);break-inside:avoid}
   .row:first-of-type{border-top:1px solid var(--rule)}
   .row .k{font-size:8.2pt;font-weight:600;letter-spacing:.02em;color:var(--ink-2);
        padding-top:1px;font-variant-numeric:tabular-nums}
@@ -159,17 +159,33 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
   .row.is-hum .v .lab{color:var(--hum)}
 
   /* ---- weeks ---- */
-  .phase{margin:34px 0 18px;padding-top:11px;border-top:2px solid var(--ink);
-     display:flex;align-items:baseline;gap:12px;break-after:avoid;break-inside:avoid}
-  .phase h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:22pt;font-weight:600;
-     margin:0;letter-spacing:-.01em}
-  .phase .pw{font-size:8.4pt;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
-  .phase .ep{margin-left:auto;font-size:8.4pt;letter-spacing:.10em;text-transform:uppercase;font-weight:600}
+  /* every week opens a page; the phase strip rides along so orientation never
+     depends on a divider you passed eight pages ago */
+  .phasebar{display:flex;align-items:baseline;gap:10px;padding-bottom:6px;margin-bottom:12px;
+     border-bottom:1px solid currentColor;font-size:8pt;letter-spacing:.15em;
+     text-transform:uppercase;font-weight:600}
+  .phasebar .pw{margin-left:auto;letter-spacing:.11em;font-weight:500;color:var(--ink-3)}
+  .phasebar .ep{letter-spacing:.11em;font-weight:600}
 
-  .week{margin:0 0 26px;break-inside:auto}
-  .whead{display:grid;grid-template-columns:104px 1fr;gap:0 18px;
-     padding-bottom:9px;margin-bottom:11px;border-bottom:1px solid var(--rule);break-after:avoid}
-  .wnum{font-family:'Cormorant Garamond',Georgia,serif;font-size:34pt;line-height:.82;
+  .week{margin:0;break-inside:auto;break-before:page;page-break-before:always}
+  .week.first{break-before:auto;page-break-before:auto}
+
+  /* contents */
+  .toc{break-after:page;page-break-after:always}
+  .toc-row{display:grid;grid-template-columns:46px 1fr 152px 30px;gap:0 14px;padding:5.5px 0;
+     border-top:1px solid var(--rule-soft);align-items:baseline}
+  .toc-row:first-of-type{border-top:1px solid var(--rule)}
+  .toc-row .n{font-family:'Cormorant Garamond',Georgia,serif;font-size:14pt;font-weight:600;
+     font-variant-numeric:tabular-nums;line-height:1}
+  .toc-row .t{font-weight:500}
+  .toc-row .d{font-size:8.4pt;color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums}
+  .toc-row .p{font-size:8.6pt;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .toc-phase{font-size:7.6pt;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+     margin:14px 0 4px;padding-top:9px;border-top:1px solid var(--ink)}
+  .frontsec{break-after:page;page-break-after:always}
+  .whead{display:grid;grid-template-columns:100px 1fr;gap:0 16px;
+     padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid var(--rule);break-after:avoid}
+  .wnum{font-family:'Cormorant Garamond',Georgia,serif;font-size:30pt;line-height:.82;
      font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .wnum small{display:block;font-family:'Outfit',sans-serif;font-size:7.2pt;font-weight:600;
      letter-spacing:.19em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
@@ -177,28 +193,29 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
   .badge{font-size:7.6pt;font-weight:600;letter-spacing:.04em;padding:2.5px 8px;
      border:1px solid var(--rule);border-radius:2px;color:var(--ink-2);background:var(--wash)}
   .badge.inperson{border-color:var(--gold-line);color:var(--gold);background:rgba(201,165,92,.10)}
-  .week h4{font-family:'Cormorant Garamond',Georgia,serif;font-size:20pt;font-weight:600;
+  .week h4{font-family:'Cormorant Garamond',Georgia,serif;font-size:18pt;font-weight:600;
      line-height:1.1;letter-spacing:-.01em;margin:0}
-  .summary{max-width:74ch;color:var(--ink-2);margin-bottom:12px}
+  .summary{max-width:74ch;color:var(--ink-2);margin-bottom:9px}
   .summary p{margin-bottom:.45em}
   .venue{border-left:1px solid var(--gold-line);padding:1px 0 1px 12px;color:var(--ink-2)}
   .light{color:var(--ink-3);font-size:9.3pt}
 
   .sub-h{font-size:7.7pt;font-weight:600;letter-spacing:.17em;text-transform:uppercase;
-     color:var(--ink-3);margin:15px 0 7px;break-after:avoid}
-  .roles{display:grid;grid-template-columns:104px 1fr;gap:0 18px;padding:6px 0;
+     color:var(--ink-3);margin:11px 0 5px;break-after:avoid}
+  .roles{display:grid;grid-template-columns:100px 1fr;gap:0 16px;padding:4px 0;
      border-top:1px solid var(--rule-soft);break-inside:avoid}
   .roles .r{font-size:8.2pt;font-weight:600;color:var(--ink-2);line-height:1.35;word-spacing:.06em}
   .roles ul{margin:0;padding-left:15px;max-width:72ch}
   .roles li{margin-bottom:2px}
   .roles li::marker{color:var(--gold-line)}
 
-  .meta-row{display:grid;grid-template-columns:104px 1fr;gap:0 18px;padding:7px 0;
+  .meta-row{display:grid;grid-template-columns:100px 1fr;gap:0 16px;padding:4.5px 0;
      border-top:1px solid var(--rule-soft);break-inside:avoid}
   .meta-row .k{font-size:7.7pt;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
      color:var(--ink-3);padding-top:2px}
   .meta-row .v{max-width:72ch;color:var(--ink)}
   .meta-row.src .v{color:var(--ink-3);font-size:8.6pt}
+  .wmeta{break-inside:avoid}
   .meta-row.hum .k{color:var(--hum)}
   .meta-row.hum .v{color:var(--ink-2)}
   .meta-row.hum .q{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;
@@ -218,8 +235,26 @@ for k, v in [("Term", "Aug 22 &ndash; Dec 5, 2026"), ("Commitment", "~20 hours p
     a('<div><b>%s</b>%s</div>' % (k, v))
 a('</div></div>')
 
+# contents. Page numbers are filled in by a second render pass: the tokens below are
+# replaced once the first pass reveals which page each week actually opens on.
+a('<div class="sec toc"><h2>Contents</h2><div class="sec-rule"></div>')
+a('<div class="toc-row"><div class="n"></div><div class="t">Weekly Cadence</div><div class="d"></div><div class="p">@@PG_CAD@@</div></div>')
+a('<div class="toc-row"><div class="n"></div><div class="t">Escalation Path</div><div class="d"></div><div class="p">@@PG_ESC@@</div></div>')
+cur = None
+for kind, b in blocks:
+    if kind == "phase":
+        cur = b
+        a('<div class="toc-phase" style="color:%s">%s &nbsp;&middot;&nbsp; %s &nbsp;&middot;&nbsp; %s</div>'
+          % (b["ink"], b["name"], b["weeks"], b["epoch"]))
+        continue
+    dates = b["badges"][0] if b["badges"] else ""
+    dates = dates.split("\u00b7")[0].strip() if "\u00b7" in dates else dates
+    a('<div class="toc-row"><div class="n">%s</div><div class="t">%s</div><div class="d">%s</div><div class="p">@@PG_W%s@@</div></div>'
+      % (b["num"].zfill(2), b["title"], dates, b["num"]))
+a('</div>')
+
 # cadence
-a('<div class="sec"><h2>Weekly Cadence</h2><div class="sec-rule"></div>')
+a('<div class="sec frontsec"><h2>Weekly Cadence</h2><div class="sec-rule"></div>')
 a('<p class="lede">%s</p>' % cadence_note)
 a('<div class="sub-h">Target hours per week</div>')
 for n, h in hours:
@@ -228,20 +263,26 @@ a('<div class="row"><div class="k"><b>~20</b></div><div class="v"><b>Weekly tota
 a('</div>')
 
 # escalation
-a('<div class="sec"><h2>Escalation Path</h2><div class="sec-rule"></div>')
+a('<div class="sec frontsec"><h2>Escalation Path</h2><div class="sec-rule"></div>')
 a('<p class="lede">%s</p>' % esc_note)
 for i, (h, m) in enumerate(esc, 1):
     a('<div class="row"><div class="k">Step %d</div><div class="v"><span class="lab">%s</span> %s</div></div>' % (i, h, m))
 a('</div>')
 
 # weeks
+cur_phase, first = None, True
 for kind, b in blocks:
     if kind == "phase":
-        a('<div class="phase"><h3>%s</h3><span class="pw">%s</span><span class="ep" style="color:%s">%s</span></div>'
-          % (b["name"], b["weeks"], b["ink"], b["epoch"]))
+        cur_phase = b
         continue
     w = b
-    a('<div class="week"><div class="whead"><div class="wnum"><small>Week</small>%s</div><div>' % w["num"].zfill(2))
+    a('<div class="week%s">' % (" first" if first else ""))
+    first = False
+    if cur_phase:
+        a('<div class="phasebar" style="color:%s"><span>%s</span><span class="ep">&middot; %s</span>'
+          '<span class="pw">%s</span></div>'
+          % (cur_phase["ink"], cur_phase["name"], cur_phase["epoch"], cur_phase["weeks"]))
+    a('<div class="whead"><div class="wnum"><small>Week</small>%s</div><div>' % w["num"].zfill(2))
     a('<div class="badges">')
     for bd in w["badges"]:
         cls = "badge inperson" if ("Sat" in bd or "Full Day" in bd or "Half Day" in bd) else "badge"
@@ -271,6 +312,7 @@ for kind, b in blocks:
             a('<div class="roles"><div class="r">%s</div><ul>%s</ul></div>'
               % (r["role"], "".join("<li>%s</li>" % i for i in r["items"])))
 
+    a('<div class="wmeta">')
     if w["hours"]:
         a('<div class="meta-row"><div class="k">Hours</div><div class="v"><div class="hrs">')
         for lab, val in w["hours"]:
@@ -285,7 +327,7 @@ for kind, b in blocks:
           % (w["hum"]["prompt"], w["hum"]["label"] + ".", w["hum"]["detail"]))
     if w["source"]:
         a('<div class="meta-row src"><div class="k">Source</div><div class="v">%s</div></div>' % w["source"])
-    a('</div>')
+    a('</div></div>')
 
 a("</body></html>")
 io.open(OUT, "w", encoding="utf-8").write("\n".join(E))
