@@ -182,18 +182,23 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 
   /* contents */
   .toc{break-after:page;page-break-after:always}
-  .toc-row{display:grid;grid-template-columns:46px 1fr 152px 30px;gap:0 14px;padding:5.5px 0;
+  .toc-row{display:grid;grid-template-columns:44px 1fr 168px 30px;gap:0 14px;padding:5.5px 0;
      border-top:1px solid var(--rule-soft);align-items:baseline}
   .toc-row:first-of-type{border-top:1px solid var(--rule)}
   .toc-row .n{font-family:'Cormorant Garamond',Georgia,serif;font-size:14pt;font-weight:600;
      font-variant-numeric:tabular-nums;line-height:1}
   .toc-row .t{font-weight:500}
-  .toc-row .d{font-size:8.4pt;color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums}
+  .toc-row .d{font-size:8.4pt;color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums;line-height:1.35}
+  .toc-row .sat{display:inline-block;margin-top:2px;font-size:7.4pt;font-weight:600;letter-spacing:.03em;
+     padding:1.5px 6px;border:1px solid var(--gold-line);border-radius:2px;color:var(--gold);
+     background:rgba(201,165,92,.10);white-space:nowrap}
+  .toc-key{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:7.6pt;
+     color:var(--ink-3);margin:0 0 10px}
   .toc-row .p{font-size:8.6pt;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   .toc-phase{font-size:7.6pt;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
      margin:14px 0 4px;padding-top:9px;border-top:1px solid var(--ink)}
   .frontsec{break-after:page;page-break-after:always}
-  body.handout .toc-row{grid-template-columns:46px 1fr 152px}
+  body.handout .toc-row{grid-template-columns:44px 1fr 168px}
   .whead{display:grid;grid-template-columns:100px 1fr;gap:0 16px;
      padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid var(--rule);break-after:avoid}
   .wnum{font-family:'Cormorant Garamond',Georgia,serif;font-size:30pt;line-height:.82;
@@ -249,6 +254,7 @@ a('</div></div>')
 # contents. Page numbers are filled in by a second render pass: the tokens below are
 # replaced once the first pass reveals which page each week actually opens on.
 a('<div class="sec toc"><h2>Contents</h2><div class="sec-rule"></div>')
+a('<div class="toc-key">In person at ACC Highland, Room 2226 <span class="sat">Sat &middot; Full day or half day</span></div>')
 if not HANDOUT:
     a('<div class="toc-row"><div class="n"></div><div class="t">Weekly Cadence</div><div class="d"></div><div class="p">@@PG_CAD@@</div></div>')
     a('<div class="toc-row"><div class="n"></div><div class="t">Escalation Path</div><div class="d"></div><div class="p">@@PG_ESC@@</div></div>')
@@ -259,8 +265,17 @@ for kind, b in blocks:
         a('<div class="toc-phase" style="color:%s">%s &nbsp;&middot;&nbsp; %s &nbsp;&middot;&nbsp; %s</div>'
           % (b["ink"], b["name"], b["weeks"], b["epoch"]))
         continue
-    dates = b["badges"][0] if b["badges"] else ""
-    dates = dates.split("\u00b7")[0].strip() if "\u00b7" in dates else dates
+    inperson = [x for x in b["badges"] if ("Sat" in x or "Full Day" in x or "Half Day" in x)]
+    weekday = [x for x in b["badges"] if x not in inperson]
+    wd = weekday[0] if weekday else ""
+    if "\u00b7" in wd:
+        wd = wd.split("\u00b7")[0].strip()
+    dates = wd
+    for chip in inperson:
+        when = re.search(r"Sat\s+[A-Z][a-z]{2}\s+\d{1,2}", chip)
+        kind = "Half day" if "Half Day" in chip else "Full day"
+        label = "%s &middot; %s" % (when.group(0), kind) if when else chip.lstrip("+ ").strip()
+        dates += ('<br>' if dates else '') + '<span class="sat">%s</span>' % label
     pgcell = "" if HANDOUT else ('@@PG_W%s@@' % b["num"])
     a('<div class="toc-row"><div class="n">%s</div><div class="t">%s</div><div class="d">%s</div><div class="p">%s</div></div>'
       % (b["num"].zfill(2), b["title"], dates, pgcell))

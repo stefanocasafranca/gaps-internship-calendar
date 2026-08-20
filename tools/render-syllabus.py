@@ -33,7 +33,7 @@ def page_of(pages, needle):
 tok = build()
 entries = [("@@PG_CAD@@", "weekly cadence"), ("@@PG_ESC@@", "escalation path")]
 entries += [("@@PG_W%s@@" % n, norm(t)) for t, _d, n in
-            re.findall(r'<div class="t">([^<]+)</div><div class="d">([^<]*)</div><div class="p">@@PG_W(\d+)@@', tok)]
+            re.findall(r'<div class="t">([^<]+)</div><div class="d">(.*?)</div><div class="p">@@PG_W(\d+)@@', tok, re.S)]
 
 pages = render(tok, SP + "/_pass.pdf")
 for i in range(1, MAX_PASSES + 1):
