@@ -8,6 +8,13 @@ from bs4 import BeautifulSoup
 SRC = os.path.expanduser("~/code/gaps-calendar/index.html")
 OUT = sys.argv[1]
 soup = BeautifulSoup(io.open(SRC, encoding="utf-8").read(), "html.parser")
+# The calendar ships with <div id="calendar" class="hum-active">, so on screen the
+# .hum-only variants show and the .standard-only variants are hidden. Print has no
+# toggle, so drop the hidden branch here or the document prints two contradictory
+# schedules for every week that has both.
+for _el in soup.select(".standard-only, .standard-only-block"):
+    _el.decompose()
+
 T = lambda x: re.sub(r"\s+", " ", x.get_text(" ", strip=True)) if x else ""
 
 # --- Due-date model -----------------------------------------------------------
