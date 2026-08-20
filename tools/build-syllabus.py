@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup, NavigableString
 
 SRC = os.path.expanduser("~/code/gaps-calendar/index.html")
 OUT = sys.argv[1]
+# --handout: the intern-facing extract. Cover, the 16 weeks at a glance, and how a week
+# works. The week-by-week hour detail stays internal.
+HANDOUT = "--handout" in sys.argv
 
 soup = BeautifulSoup(io.open(SRC, encoding="utf-8").read(), "html.parser")
 
@@ -110,7 +113,7 @@ for el in soup.select_one("#calendar").find_all(recursive=False):
 E = []
 a = E.append
 a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-<title>GAPS Internship Syllabus, Fall 2026</title>
+<title>GAPS Internship: 16-Week Calendar, Fall 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -190,6 +193,7 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
   .toc-phase{font-size:7.6pt;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
      margin:14px 0 4px;padding-top:9px;border-top:1px solid var(--ink)}
   .frontsec{break-after:page;page-break-after:always}
+  body.handout .toc-row{grid-template-columns:46px 1fr 152px}
   .whead{display:grid;grid-template-columns:100px 1fr;gap:0 16px;
      padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid var(--rule);break-after:avoid}
   .wnum{font-family:'Cormorant Garamond',Georgia,serif;font-size:30pt;line-height:.82;
@@ -229,12 +233,12 @@ a("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
      font-size:12.5pt;color:var(--hum);display:block;margin-bottom:2px}
   .hrs{display:flex;flex-wrap:wrap;gap:0 20px;font-size:8.8pt;color:var(--ink-2)}
   .hrs b{color:var(--ink);font-weight:600}
-</style></head><body>""")
+</style></head><body class="%s">""" % ("handout" if HANDOUT else ""))
 
 # cover
 a('<div class="cover"><div class="org">Center for Government and Civic Service &nbsp;&middot;&nbsp; The Public Service Desk</div>')
 a('<h1>GAPS Internship</h1>')
-a('<div class="sub">Generative AI in Public Service &mdash; 16-Week Syllabus, Fall 2026</div>')
+a('<div class="sub">Generative AI in Public Service &mdash; 16-Week Calendar, Fall 2026</div>')
 a('<div class="facts">')
 for k, v in [("Term", "Aug 22 &ndash; Dec 5, 2026"), ("Commitment", "~20 hours per week"),
              ("In person", "9 Saturdays, ACC Highland Campus, Room 2226"),
@@ -245,8 +249,9 @@ a('</div></div>')
 # contents. Page numbers are filled in by a second render pass: the tokens below are
 # replaced once the first pass reveals which page each week actually opens on.
 a('<div class="sec toc"><h2>Contents</h2><div class="sec-rule"></div>')
-a('<div class="toc-row"><div class="n"></div><div class="t">Weekly Cadence</div><div class="d"></div><div class="p">@@PG_CAD@@</div></div>')
-a('<div class="toc-row"><div class="n"></div><div class="t">Escalation Path</div><div class="d"></div><div class="p">@@PG_ESC@@</div></div>')
+if not HANDOUT:
+    a('<div class="toc-row"><div class="n"></div><div class="t">Weekly Cadence</div><div class="d"></div><div class="p">@@PG_CAD@@</div></div>')
+    a('<div class="toc-row"><div class="n"></div><div class="t">Escalation Path</div><div class="d"></div><div class="p">@@PG_ESC@@</div></div>')
 cur = None
 for kind, b in blocks:
     if kind == "phase":
@@ -256,8 +261,9 @@ for kind, b in blocks:
         continue
     dates = b["badges"][0] if b["badges"] else ""
     dates = dates.split("\u00b7")[0].strip() if "\u00b7" in dates else dates
-    a('<div class="toc-row"><div class="n">%s</div><div class="t">%s</div><div class="d">%s</div><div class="p">@@PG_W%s@@</div></div>'
-      % (b["num"].zfill(2), b["title"], dates, b["num"]))
+    pgcell = "" if HANDOUT else ('@@PG_W%s@@' % b["num"])
+    a('<div class="toc-row"><div class="n">%s</div><div class="t">%s</div><div class="d">%s</div><div class="p">%s</div></div>'
+      % (b["num"].zfill(2), b["title"], dates, pgcell))
 a('</div>')
 
 # cadence
@@ -270,15 +276,16 @@ a('<div class="row"><div class="k"><b>~20</b></div><div class="v"><b>Weekly tota
 a('</div>')
 
 # escalation
-a('<div class="sec frontsec"><h2>Escalation Path</h2><div class="sec-rule"></div>')
-a('<p class="lede">%s</p>' % esc_note)
-for i, (h, m) in enumerate(esc, 1):
+if not HANDOUT:
+  a('<div class="sec frontsec"><h2>Escalation Path</h2><div class="sec-rule"></div>')
+  a('<p class="lede">%s</p>' % esc_note)
+  for i, (h, m) in enumerate(esc, 1):
     a('<div class="row"><div class="k">Step %d</div><div class="v"><span class="lab">%s</span> %s</div></div>' % (i, h, m))
-a('</div>')
+  a('</div>')
 
 # weeks
 cur_phase, first = None, True
-for kind, b in blocks:
+for kind, b in ([] if HANDOUT else blocks):
     if kind == "phase":
         cur_phase = b
         continue
